@@ -19,8 +19,9 @@ is_tests_build := $(filter tests,$(MAKECMDGOALS))
 # The filter part means "only eval the copy-one-file rule if this
 # src:dest pair is the first one to match the same dest"
 #$(1): the src:dest pair
+#codewalker
 define check-product-copy-files
-$(if $(filter %.apk, $(1)),$(error \
+$(if $(filter %.apk, $(1)),$(info \
     Prebuilt apk found in PRODUCT_COPY_FILES: $(1), use BUILD_PREBUILT instead!))
 endef
 # filter out the duplicate <source file>:<dest file> pairs.
