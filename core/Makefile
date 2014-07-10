@@ -19,10 +19,11 @@ is_tests_build := $(filter tests,$(MAKECMDGOALS))
 # The filter part means "only eval the copy-one-file rule if this
 # src:dest pair is the first one to match the same dest"
 #$(1): the src:dest pair
-define check-product-copy-files
-$(if $(filter %.apk, $(1)),$(error \
-    Prebuilt apk found in PRODUCT_COPY_FILES: $(1), use BUILD_PREBUILT instead!))
-endef
+#codewalker
+#define check-product-copy-files
+#$(if $(filter %.apk, $(1)),$(info \
+#    Prebuilt apk found in PRODUCT_COPY_FILES: $(1), use BUILD_PREBUILT instead!))
+#endef
 # filter out the duplicate <source file>:<dest file> pairs.
 unique_product_copy_files_pairs :=
 $(foreach cf,$(PRODUCT_COPY_FILES), \
@@ -103,7 +104,7 @@ endif
 BUILD_VERSION_TAGS := $(subst $(space),$(comma),$(sort $(BUILD_VERSION_TAGS)))
 
 # A human-readable string that descibes this build in detail.
-build_desc := $(TARGET_PRODUCT)-$(TARGET_BUILD_VARIANT) $(PLATFORM_VERSION) $(BUILD_ID) $(BUILD_NUMBER) $(BUILD_VERSION_TAGS)
+build_desc := $(TARGET_PRODUCT)-$(TARGET_BUILD_VARIANT) $(PLATFORM_VERSION) $(BUILD_ID) $(BUILD_NUMBER) $(BUILD_VERSION_TAGS) $(BUILD_TAG)
 $(INSTALLED_BUILD_PROP_TARGET): PRIVATE_BUILD_DESC := $(build_desc)
 
 # The string used to uniquely identify this build;  used by the OTA server.
@@ -156,7 +157,7 @@ $(if $(product_property_overrides_locale_region),,$(word 2, $(call default-local
 endef
 
 BUILDINFO_SH := build/tools/buildinfo.sh
-$(INSTALLED_BUILD_PROP_TARGET): $(BUILDINFO_SH) $(INTERNAL_BUILD_ID_MAKEFILE) $(BUILD_SYSTEM)/version_defaults.mk $(wildcard $(TARGET_DEVICE_DIR)/system.prop)
+$(INSTALLED_BUILD_PROP_TARGET): $(BUILDINFO_SH) $(INTERNAL_BUILD_ID_MAKEFILE) $(BUILD_TAG_MAKEFILE) $(BUILD_SYSTEM)/version_defaults.mk $(wildcard $(TARGET_DEVICE_DIR)/system.prop)
 	@echo Target buildinfo: $@
 	@mkdir -p $(dir $@)
 	$(hide) TARGET_BUILD_TYPE="$(TARGET_BUILD_VARIANT)" \
@@ -176,6 +177,7 @@ $(INSTALLED_BUILD_PROP_TARGET): $(BUILDINFO_SH) $(INTERNAL_BUILD_ID_MAKEFILE) $(
 			PLATFORM_SDK_VERSION="$(PLATFORM_SDK_VERSION)" \
 			PLATFORM_VERSION_CODENAME="$(PLATFORM_VERSION_CODENAME)" \
 			BUILD_VERSION_TAGS="$(BUILD_VERSION_TAGS)" \
+			BUILD_TAG="$(BUILD_TAG)" \
 			TARGET_BOOTLOADER_BOARD_NAME="$(TARGET_BOOTLOADER_BOARD_NAME)" \
 			BUILD_FINGERPRINT="$(BUILD_FINGERPRINT)" \
 			TARGET_BOARD_PLATFORM="$(TARGET_BOARD_PLATFORM)" \

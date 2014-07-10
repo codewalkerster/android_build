@@ -23,6 +23,7 @@
 #     PLATFORM_VERSION_CODENAME
 #     DEFAULT_APP_TARGET_SDK
 #     BUILD_ID
+#     BUILD_TAG
 #     BUILD_NUMBER
 #
 
@@ -34,6 +35,11 @@
 INTERNAL_BUILD_ID_MAKEFILE := $(wildcard $(BUILD_SYSTEM)/build_id.mk)
 ifneq "" "$(INTERNAL_BUILD_ID_MAKEFILE)"
   include $(INTERNAL_BUILD_ID_MAKEFILE)
+endif
+
+BUILD_TAG_MAKEFILE := $(wildcard $(BUILD_SYSTEM)/build_tag.mk)
+ifneq "" "$(BUILD_TAG_MAKEFILE)"
+  include $(BUILD_TAG_MAKEFILE)
 endif
 
 ifeq "" "$(PLATFORM_VERSION)"
