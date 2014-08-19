@@ -205,8 +205,14 @@ ifneq ($(CUSTOM_KERNEL_HEADERS),)
 else
     KERNEL_HEADERS_COMMON := $(libc_root)/kernel/common
     KERNEL_HEADERS_ARCH   := $(libc_root)/kernel/arch-$(TARGET_ARCH)
+    KERNEL_HEADERS_VENDOR := $(TOP)/hardware/samsung_slsi/exynos/include
+ ifneq ($(filter 3.10, $(TARGET_LINUX_KERNEL_VERSION)),)
+    KERNEL_HEADERS_VENDOR += $(TOP)/hardware/samsung_slsi/exynos/kernel-3.10-headers
+ else
+    KERNEL_HEADERS_VENDOR += $(TOP)/hardware/samsung_slsi/exynos/kernel-3.4-headers
+ endif
 endif
-KERNEL_HEADERS := $(KERNEL_HEADERS_COMMON) $(KERNEL_HEADERS_ARCH)
+KERNEL_HEADERS := $(KERNEL_HEADERS_COMMON) $(KERNEL_HEADERS_ARCH) $(KERNEL_HEADERS_VENDOR)
 
 TARGET_C_INCLUDES := \
 	$(libc_root)/arch-arm/include \
