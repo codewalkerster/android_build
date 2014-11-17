@@ -735,7 +735,24 @@ ifeq (,$(filter true, $(TARGET_NO_KERNEL) $(TARGET_NO_RECOVERY)))
 
 INSTALLED_RECOVERYIMAGE_TARGET := $(PRODUCT_OUT)/recovery.img
 
+TARGET_AMLOGIC_BOOTLOADER := $(TARGET_DEVICE_DIR)/u-boot.bin
 recovery_initrc := $(call include-path-for, recovery)/etc/init.rc
+custom_recovery_initrc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/init.rc))
+ifneq ($(custom_recovery_initrc),)
+  recovery_initrc := $(custom_recovery_initrc)
+endif
+
+amlogic_recovery_initrc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/init.recovery.*.rc))
+ifneq ($(amlogic_recovery_initrc),)
+  recovery_amlogic_initrc := $(amlogic_recovery_initrc)
+endif
+
+recovery_sh := $(TARGET_OUT)/bin/sh
+custom_recovery_sh := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/sh))
+ifneq ($(custom_recovery_sh),)
+  recovery_sh := $(custom_recovery_sh)
+endif
+
 recovery_sepolicy := $(call intermediates-dir-for,ETC,sepolicy.recovery)/sepolicy.recovery
 recovery_kernel := $(INSTALLED_KERNEL_TARGET) # same as a non-recovery system
 recovery_ramdisk := $(PRODUCT_OUT)/ramdisk-recovery.img
@@ -777,11 +794,15 @@ endif
 recovery_resources_private := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/res))
 recovery_resource_deps := $(shell find $(recovery_resources_common) \
   $(recovery_resources_private) -type f)
-ifdef TARGET_RECOVERY_FSTAB
-recovery_fstab := $(TARGET_RECOVERY_FSTAB)
+recovery_kl := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/recovery.kl))
+
+TARGET_RECOVERY_FSTAB := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/recovery.fstab))
+ifneq ($(TARGET_RECOVERY_FSTAB),)
+  recovery_fstab := $(TARGET_RECOVERY_FSTAB)
 else
-recovery_fstab := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.fstab))
+  recovery_fstab := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.fstab))
 endif
+
 # Named '.dat' so we don't attempt to use imgdiff for patching it.
 RECOVERY_RESOURCE_ZIP := $(TARGET_OUT)/etc/recovery-resource.dat
 
@@ -789,9 +810,19 @@ ifeq ($(recovery_resources_private),)
   $(info No private recovery resources for TARGET_DEVICE $(TARGET_DEVICE))
 endif
 
+custom_recovery_busybox := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/busybox))
+ifneq ($(custom_recovery_busybox),)
+  recovery_busybox := $(custom_recovery_busybox)
+endif
+
 ifeq ($(recovery_fstab),)
   $(info No recovery.fstab for TARGET_DEVICE $(TARGET_DEVICE))
 endif
+
+recovery_remote := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/remotecfg))
+recovery_remote_conf := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/remote.conf))
+recovery_systemcontrol := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/systemcontrol_recovery))
+recovery_mesondisplay_cfg := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/mesondisplay.cfg))
 
 INTERNAL_RECOVERYIMAGE_ARGS := \
 	$(addprefix --second ,$(INSTALLED_2NDBOOTLOADER_TARGET)) \
@@ -836,7 +867,9 @@ $(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 		$(INSTALLED_2NDBOOTLOADER_TARGET) \
 		$(recovery_build_prop) $(recovery_resource_deps) \
 		$(recovery_fstab) \
-		$(RECOVERY_INSTALL_OTA_KEYS)
+		$(RECOVERY_INSTALL_OTA_KEYS) \
+		$(recovery_busybox) \
+		$(recovery_sh)
 	@echo ----- Making recovery image ------
 	$(hide) rm -rf $(TARGET_RECOVERY_OUT)
 	$(hide) mkdir -p $(TARGET_RECOVERY_OUT)
@@ -848,16 +881,39 @@ $(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 	$(hide) cp -f $(recovery_initrc) $(TARGET_RECOVERY_ROOT_OUT)/
 	$(hide) rm -f $(TARGET_RECOVERY_ROOT_OUT)/sepolicy
 	$(hide) cp -f $(recovery_sepolicy) $(TARGET_RECOVERY_ROOT_OUT)/sepolicy
-	$(hide) -cp $(TARGET_ROOT_OUT)/init.recovery.*.rc $(TARGET_RECOVERY_ROOT_OUT)/
 	$(hide) cp -f $(recovery_binary) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	$(hide) mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/res
 	$(hide) rm -rf $(TARGET_RECOVERY_ROOT_OUT)/res/*
 	$(hide) cp -rf $(recovery_resources_common)/* $(TARGET_RECOVERY_ROOT_OUT)/res
 	$(hide) cp -f $(recovery_font) $(TARGET_RECOVERY_ROOT_OUT)/res/images/font.png
+ifneq ($(recovery_amlogic_initrc),)
+	$(hide) cp $(recovery_amlogic_initrc) $(TARGET_RECOVERY_ROOT_OUT)/
+endif
 	$(hide) $(foreach item,$(recovery_resources_private), \
 	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
 	$(hide) $(foreach item,$(recovery_fstab), \
 	  cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.fstab)
+ifneq ($(recovery_kl),)
+	$(hide) cp -f $(recovery_kl) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.kl
+endif
+ifneq ($(recovery_busybox),)
+	$(hide) cp -f $(recovery_busybox) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+endif
+ifneq ($(recovery_remote),)
+	$(hide) cp -f $(recovery_remote) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+endif
+ifneq ($(recovery_remote_conf),)
+	$(hide) cp -f $(recovery_remote_conf) $(TARGET_RECOVERY_ROOT_OUT)/etc/
+endif
+ifneq ($(recovery_systemcontrol),)
+	$(hide) cp -f $(recovery_systemcontrol) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+endif
+ifneq ($(recovery_mesondisplay_cfg),)
+	$(hide) cp -f $(recovery_mesondisplay_cfg) $(TARGET_RECOVERY_ROOT_OUT)/etc/
+endif
+ifneq ($(recovery_sh),)
+	$(hide) cp -f $(recovery_sh) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+endif
 	$(hide) cp $(RECOVERY_INSTALL_OTA_KEYS) $(TARGET_RECOVERY_ROOT_OUT)/res/keys
 	$(hide) cat $(INSTALLED_DEFAULT_PROP_TARGET) $(recovery_build_prop) \
 	        > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
@@ -1334,6 +1390,10 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 		$(TARGET_RECOVERY_ROOT_OUT),$(zip_root)/RECOVERY/RAMDISK)
 ifdef INSTALLED_KERNEL_TARGET
 	$(hide) $(ACP) $(INSTALLED_KERNEL_TARGET) $(zip_root)/RECOVERY/kernel
+endif
+ifdef TARGET_AMLOGIC_BOOTLOADER
+	$(hide) mkdir -p $(zip_root)/BOOTLOADER
+	$(hide) $(ACP) $(TARGET_AMLOGIC_BOOTLOADER) $(zip_root)/BOOTLOADER/bootloader
 endif
 ifdef INSTALLED_2NDBOOTLOADER_TARGET
 	$(hide) $(ACP) \
