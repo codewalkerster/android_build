@@ -810,6 +810,7 @@ ifeq ($(recovery_resources_private),)
   $(info No private recovery resources for TARGET_DEVICE $(TARGET_DEVICE))
 endif
 
+recovery_busybox := $(PRODUCT_OUT)/utilities/busybox
 custom_recovery_busybox := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/busybox))
 ifneq ($(custom_recovery_busybox),)
   recovery_busybox := $(custom_recovery_busybox)
@@ -821,7 +822,7 @@ endif
 
 recovery_remote := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/remotecfg))
 recovery_remote_conf := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/remote.conf))
-recovery_systemcontrol := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/systemcontrol_recovery))
+recovery_systemcontrol := $(PRODUCT_OUT)/utilities/systemcontrol_static
 recovery_mesondisplay_cfg := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/mesondisplay.cfg))
 
 INTERNAL_RECOVERYIMAGE_ARGS := \
@@ -896,8 +897,10 @@ endif
 ifneq ($(recovery_kl),)
 	$(hide) cp -f $(recovery_kl) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.kl
 endif
+ifneq ($(TARGET_RECOVERY_NO_BUSYBOX),true)
 ifneq ($(recovery_busybox),)
 	$(hide) cp -f $(recovery_busybox) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+endif
 endif
 ifneq ($(recovery_remote),)
 	$(hide) cp -f $(recovery_remote) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
