@@ -867,7 +867,7 @@ else # TARGET_BUILD_APPS
   endif
 
 # Building a full system-- the default is to build droidcore
-droid: droidcore dist_files
+droid: droidcore dist_files rootsystem
 
 endif # TARGET_BUILD_APPS
 
