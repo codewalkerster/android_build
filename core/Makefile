@@ -422,7 +422,12 @@ ALL_DEFAULT_INSTALLED_MODULES += $(event_log_tags_file)
 # Targets for boot/OS images
 # #################################################################
 ifneq ($(strip $(TARGET_NO_BOOTLOADER)),true)
-  INSTALLED_BOOTLOADER_MODULE := $(PRODUCT_OUT)/bootloader
+  amlogic_bootloader := $(strip $(wildcard $(TARGET_DEVICE_DIR)/u-boot.bin))
+  ifneq ($(amlogic_bootloader),)
+    INSTALLED_BOOTLOADER_MODULE := $(PRODUCT_OUT)/u-boot.bin
+  else
+    INSTALLED_BOOTLOADER_MODULE := $(PRODUCT_OUT)/bootloader
+  endif
   ifeq ($(strip $(TARGET_BOOTLOADER_IS_2ND)),true)
     INSTALLED_2NDBOOTLOADER_TARGET := $(PRODUCT_OUT)/2ndbootloader
   else
@@ -735,7 +740,6 @@ ifeq (,$(filter true, $(TARGET_NO_KERNEL) $(TARGET_NO_RECOVERY)))
 
 INSTALLED_RECOVERYIMAGE_TARGET := $(PRODUCT_OUT)/recovery.img
 
-TARGET_AMLOGIC_BOOTLOADER := $(TARGET_DEVICE_DIR)/u-boot.bin
 recovery_initrc := $(call include-path-for, recovery)/etc/init.rc
 custom_recovery_initrc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/init.rc))
 ifneq ($(custom_recovery_initrc),)
@@ -1394,9 +1398,9 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 ifdef INSTALLED_KERNEL_TARGET
 	$(hide) $(ACP) $(INSTALLED_KERNEL_TARGET) $(zip_root)/RECOVERY/kernel
 endif
-ifdef TARGET_AMLOGIC_BOOTLOADER
+ifdef INSTALLED_BOOTLOADER_MODULE
 	$(hide) mkdir -p $(zip_root)/BOOTLOADER
-	$(hide) $(ACP) $(TARGET_AMLOGIC_BOOTLOADER) $(zip_root)/BOOTLOADER/bootloader
+	$(hide) $(ACP) $(INSTALLED_BOOTLOADER_MODULE) $(zip_root)/BOOTLOADER/bootloader
 endif
 ifdef INSTALLED_2NDBOOTLOADER_TARGET
 	$(hide) $(ACP) \
