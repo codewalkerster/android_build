@@ -825,9 +825,9 @@ ifeq ($(recovery_fstab),)
 endif
 
 recovery_remote := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/remotecfg))
-recovery_remote_conf := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/remote.conf))
+recovery_remote_conf := $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/remote.conf))
 recovery_systemcontrol := $(PRODUCT_OUT)/utilities/systemcontrol_static
-recovery_mesondisplay_cfg := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/mesondisplay.cfg))
+recovery_mesondisplay_cfg := $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/mesondisplay.cfg))
 
 INTERNAL_RECOVERYIMAGE_ARGS := \
 	$(addprefix --second ,$(INSTALLED_2NDBOOTLOADER_TARGET)) \
