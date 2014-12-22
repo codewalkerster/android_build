@@ -460,6 +460,21 @@ def GetImage(which, tmpdir, info_dict):
   return sparse_img.SparseImage(path, mappath)
 
 
+def UpdateLogo(input_zip, output_zip, script):
+  logo_img_exists = 0
+  try:
+    logo_img_info = input_zip.getinfo("LOGO/logo")
+    logo_img_exists = 1
+    logo_img = common.File("logo.img", input_zip.read("LOGO/logo"))
+  except KeyError:
+    print 'WARNING: Did not find logo'
+
+  if logo_img_exists:
+    common.CheckSize(logo_img.data, "logo.img", OPTIONS.info_dict)
+    common.ZipWriteStr(output_zip, "logo.img", logo_img.data)
+    script.WriteRawImage("/logo", "logo.img")
+
+
 def WriteFullOTAPackage(input_zip, output_zip):
   # TODO: how to determine this?  We don't know what version it will
   # be installed on top of.  For now, we expect the API just won't
@@ -610,6 +625,8 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
 
       vendor_items.GetMetadata(input_zip)
       vendor_items.Get("vendor").SetPermissions(script)
+
+  UpdateLogo(input_zip, output_zip, script)
 
   common.CheckSize(boot_img.data, "boot.img", OPTIONS.info_dict)
   common.ZipWriteStr(output_zip, "boot.img", boot_img.data)

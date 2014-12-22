@@ -1415,6 +1415,11 @@ endif
 ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/RECOVERY/pagesize
 endif
+	@# Component of the logo image
+	$(hide) mkdir -p $(zip_root)/LOGO
+ifneq ($(INSTALLED_AML_LOGO),)
+	$(hide) $(ACP) $(INSTALLED_AML_LOGO) $(zip_root)/LOGO/logo
+endif
 	@# Components of the boot image
 	$(hide) mkdir -p $(zip_root)/BOOT
 	$(hide) $(call package_files-copy-root, \
