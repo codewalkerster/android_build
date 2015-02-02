@@ -79,6 +79,23 @@ else
 need_compile_asset := true
 endif
 
+ifeq ($(strip $(LOCAL_MANIFEST_FILE)),)
+LOCAL_MANIFEST_FILE := AndroidManifest.xml
+endif
+
+OVERLAY_MANIFEST_FILE := $(strip $(wildcard $(DEVICE_PACKAGE_OVERLAYS)/$(LOCAL_PATH)/AndroidManifest.xml))
+
+# If you need to put the MANIFEST_FILE outside of LOCAL_PATH
+# you can use FULL_MANIFEST_FILE
+ifeq ($(strip $(LOCAL_FULL_MANIFEST_FILE)),)
+ifeq ($(strip $(OVERLAY_MANIFEST_FILE)),)
+LOCAL_FULL_MANIFEST_FILE := $(LOCAL_PATH)/$(LOCAL_MANIFEST_FILE)
+else
+$(info AndroidMainfest.xml is overlay by $(OVERLAY_MANIFEST_FILE))
+LOCAL_FULL_MANIFEST_FILE := $(OVERLAY_MANIFEST_FILE)
+endif
+endif
+
 # LOCAL_RESOURCE_DIR may point to resource generated during the build
 need_compile_res :=
 ifeq (,$(LOCAL_RESOURCE_DIR))
