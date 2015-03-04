@@ -443,6 +443,22 @@ else
   INSTALLED_KERNEL_TARGET :=
 endif
 
+# Analysis BOARD_MKBOOTIMG_ARGS
+ifneq ($(strip $(filter --%,$(BOARD_MKBOOTIMG_ARGS))),)
+ifneq ($(strip $(filter --second,$(BOARD_MKBOOTIMG_ARGS))),)
+  BOARD_MKBOOTIMG_ARGS_TMP := $(strip $(filter-out --second,$(BOARD_MKBOOTIMG_ARGS)))
+ifneq ($(strip $(filter --%,$(BOARD_MKBOOTIMG_ARGS_TMP))),)
+  INSTALLED_BOARDDTB_TARGET := $(firstword $(BOARD_MKBOOTIMG_ARGS_TMP))
+  FILTER_SECOND_BOARD_MKBOOTIMG_ARGS := \
+	$(strip $(filter-out $(INSTALLED_BOARDDTB_TARGET),$(BOARD_MKBOOTIMG_ARGS_TMP)))
+else
+  INSTALLED_BOARDDTB_TARGET := $(BOARD_MKBOOTIMG_ARGS_TMP)
+endif
+else
+  FILTER_SECOND_BOARD_MKBOOTIMG_ARGS := $(BOARD_MKBOOTIMG_ARGS)
+endif
+endif
+
 # -----------------------------------------------------------------
 # the ramdisk
 INTERNAL_RAMDISK_FILES := $(filter $(TARGET_ROOT_OUT)/%, \
@@ -506,31 +522,47 @@ bootimage-nodeps: $(MKEXT2IMG)
 	$(hide) $(MKEXT2BOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) --output $(INSTALLED_BOOTIMAGE_TARGET)
 
 else ifeq (true,$(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SUPPORTS_VERITY)) # TARGET_BOOTIMAGE_USE_EXT2 != true
+ifneq ($(strip $(filter --%,$(BOARD_MKBOOTIMG_ARGS))),)
+  INTERNAL_BOOTIMAGE_ARGS += $(strip $(BOARD_MKBOOTIMG_ARGS))
+endif
+
+# Check mkbootimg tool args: can't have two --second <filename>
+ifeq ($(words $(filter --second,$(INTERNAL_BOOTIMAGE_ARGS))),2)
+  $(error ERROR: find two --second args! $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS))
+endif
 
 $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_FILES) $(BOOT_SIGNER)
 	$(call pretty,"Target boot image: $@")
-	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --output $@
+	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) --output $@
 	$(BOOT_SIGNER) /boot $@ $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VERITY_SIGNING_KEY) $@
 	$(hide) $(call assert-max-image-size,$@,$(BOARD_BOOTIMAGE_PARTITION_SIZE))
 
 .PHONY: bootimage-nodeps
 bootimage-nodeps: $(MKBOOTIMG) $(BOOT_SIGNER)
 	@echo "make $@: ignoring dependencies"
-	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --output $(INSTALLED_BOOTIMAGE_TARGET)
+	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) --output $(INSTALLED_BOOTIMAGE_TARGET)
 	$(BOOT_SIGNER) /boot $(INSTALLED_BOOTIMAGE_TARGET) $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VERITY_SIGNING_KEY) $(INSTALLED_BOOTIMAGE_TARGET)
 	$(hide) $(call assert-max-image-size,$(INSTALLED_BOOTIMAGE_TARGET),$(BOARD_BOOTIMAGE_PARTITION_SIZE))
 
 else # PRODUCT_SUPPORTS_VERITY != true
+ifneq ($(strip $(filter --%,$(BOARD_MKBOOTIMG_ARGS))),)
+  INTERNAL_BOOTIMAGE_ARGS += $(strip $(BOARD_MKBOOTIMG_ARGS))
+endif
+
+# Check mkbootimg tool args: can't have two --second <filename>
+ifeq ($(words $(filter --second,$(INTERNAL_BOOTIMAGE_ARGS))),2)
+  $(error ERROR: find two --second args! $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS))
+endif
 
 $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_FILES)
 	$(call pretty,"Target boot image: $@")
-	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --output $@
+	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) --output $@
 	$(hide) $(call assert-max-image-size,$@,$(BOARD_BOOTIMAGE_PARTITION_SIZE))
 
 .PHONY: bootimage-nodeps
 bootimage-nodeps: $(MKBOOTIMG)
 	@echo "make $@: ignoring dependencies"
-	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --output $(INSTALLED_BOOTIMAGE_TARGET)
+	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) --output $(INSTALLED_BOOTIMAGE_TARGET)
 	$(hide) $(call assert-max-image-size,$(INSTALLED_BOOTIMAGE_TARGET),$(BOARD_BOOTIMAGE_PARTITION_SIZE))
 
 endif # TARGET_BOOTIMAGE_USE_EXT2
@@ -846,6 +878,15 @@ ifdef BOARD_KERNEL_PAGESIZE
   INTERNAL_RECOVERYIMAGE_ARGS += --pagesize $(BOARD_KERNEL_PAGESIZE)
 endif
 
+ifneq ($(strip $(filter --%,$(BOARD_MKBOOTIMG_ARGS))),)
+  INTERNAL_RECOVERYIMAGE_ARGS += $(strip $(BOARD_MKBOOTIMG_ARGS))
+endif
+
+# Check mkbootimg tool args: can't have two --second <filename>
+ifeq ($(words $(filter --second,$(INTERNAL_RECOVERYIMAGE_ARGS))),2)
+  $(error ERROR: find two --second args! $(MKBOOTIMG) $(INTERNAL_RECOVERYIMAGE_ARGS))
+endif
+
 # Keys authorized to sign OTA packages this build will accept.  The
 # build always uses dev-keys for this; release packaging tools will
 # substitute other keys for this one.
@@ -925,7 +966,7 @@ endif
 	$(hide) cat $(INSTALLED_DEFAULT_PROP_TARGET) $(recovery_build_prop) \
 	        > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
 	$(hide) $(MKBOOTFS) $(TARGET_RECOVERY_ROOT_OUT) | $(MINIGZIP) > $(recovery_ramdisk)
-	$(hide) $(MKBOOTIMG) $(INTERNAL_RECOVERYIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --output $@
+	$(hide) $(MKBOOTIMG) $(INTERNAL_RECOVERYIMAGE_ARGS) --output $@
 ifeq (true,$(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SUPPORTS_VERITY))
 	$(BOOT_SIGNER) /recovery $@ $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VERITY_SIGNING_KEY) $@
 endif
@@ -1406,6 +1447,9 @@ ifdef INSTALLED_2NDBOOTLOADER_TARGET
 	$(hide) $(ACP) \
 		$(INSTALLED_2NDBOOTLOADER_TARGET) $(zip_root)/RECOVERY/second
 endif
+ifdef INSTALLED_BOARDDTB_TARGET
+	$(hide) $(ACP) $(INSTALLED_BOARDDTB_TARGET) $(zip_root)/RECOVERY/second
+endif
 ifdef BOARD_KERNEL_CMDLINE
 	$(hide) echo "$(BOARD_KERNEL_CMDLINE)" > $(zip_root)/RECOVERY/cmdline
 endif
@@ -1430,6 +1474,9 @@ endif
 ifdef INSTALLED_2NDBOOTLOADER_TARGET
 	$(hide) $(ACP) \
 		$(INSTALLED_2NDBOOTLOADER_TARGET) $(zip_root)/BOOT/second
+endif
+ifdef INSTALLED_BOARDDTB_TARGET
+	$(hide) $(ACP) $(INSTALLED_BOARDDTB_TARGET) $(zip_root)/BOOT/second
 endif
 ifdef BOARD_KERNEL_CMDLINE
 	$(hide) echo "$(BOARD_KERNEL_CMDLINE)" > $(zip_root)/BOOT/cmdline
@@ -1486,7 +1533,9 @@ endif
 ifdef PRODUCT_EXTRA_RECOVERY_KEYS
 	$(hide) echo "extra_recovery_keys=$(PRODUCT_EXTRA_RECOVERY_KEYS)" >> $(zip_root)/META/misc_info.txt
 endif
-	$(hide) echo 'mkbootimg_args=$(BOARD_MKBOOTIMG_ARGS)' >> $(zip_root)/META/misc_info.txt
+ifdef FILTER_SECOND_BOARD_MKBOOTIMG_ARGS
+	$(hide) echo 'mkbootimg_args=$(FILTER_SECOND_BOARD_MKBOOTIMG_ARGS)' >> $(zip_root)/META/misc_info.txt
+endif
 	$(hide) echo "use_set_metadata=1" >> $(zip_root)/META/misc_info.txt
 	$(hide) echo "multistage_support=1" >> $(zip_root)/META/misc_info.txt
 	$(hide) echo "update_rename_support=1" >> $(zip_root)/META/misc_info.txt
@@ -1528,15 +1577,35 @@ ifeq ($(TARGET_BUILD_TYPE),debug)
 endif
 name := $(name)-ota-$(FILE_NAME_TAG)
 
+# Don't use --block when pack ota.zip in secureboot mode
+ifneq ($(TARGET_USE_SECURITY_MODE),true)
+  BLOCK_BASED := --block
+endif
+
+# Don't use --block when pack ota.zip in dm_verity mode
+ifeq ($(BUILD_WITH_DM_VERITY),true)
+  DM_VERITY := --dm_verity
+ifdef BLOCK_BASED
+  BLOCK_BASED :=
+endif
+endif
+
 INTERNAL_OTA_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 
 $(INTERNAL_OTA_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
 
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	@echo "Package OTA: $@"
+	@echo MKBOOTIMG=$(MKBOOTIMG) \
+	   ./build/tools/releasetools/ota_from_target_files -v \
+	   $(BLOCK_BASED) \
+	   -p $(HOST_OUT) \
+	   -k $(KEY_CERT_PAIR) \
+	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
+	   $(BUILT_TARGET_FILES_PACKAGE) $@
 	$(hide) MKBOOTIMG=$(MKBOOTIMG) \
 	   ./build/tools/releasetools/ota_from_target_files -v \
-	   --block \
+	   $(BLOCK_BASED) \
 	   -p $(HOST_OUT) \
 	   -k $(KEY_CERT_PAIR) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
