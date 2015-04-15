@@ -48,6 +48,23 @@ OPTIONS = common.OPTIONS
 OPTIONS.add_missing = False
 OPTIONS.rebuild_recovery = False
 
+def AddMetadataBlockFiles(output_zip, prefix="IMAGES/"):
+  """write table.bin and verity.img(=system.img.raw.hash) file
+  to output_zip/IMAGES/."""
+
+  if not os.path.exists(OPTIONS.VERITY_METADATA_BIN) or \
+    not os.path.exists(OPTIONS.VERITY_IMAGE):
+    print "***ERROR:metadata block file:verity_metadata.bin/verity.img not exist!\n"
+    sys.exit(1)
+
+  # write verity_metadata.bin
+  with open(OPTIONS.VERITY_METADATA_BIN, "rb") as f:
+    common.ZipWriteStr(output_zip, prefix + "verity_metadata.bin", f.read())
+  # write verity.img
+  with open(OPTIONS.VERITY_IMAGE, "rb") as f:
+    common.ZipWriteStr(output_zip, prefix + "verity.img", f.read())
+
+
 def AddSystem(output_zip, prefix="IMAGES/", recovery_img=None, boot_img=None):
   """Turn the contents of SYSTEM into a system image and store it in
   output_zip."""
@@ -285,6 +302,12 @@ def AddImagesToTargetFiles(filename):
 
   banner("system")
   AddSystem(output_zip, recovery_img=recovery_image, boot_img=boot_image)
+  if "verity_tool" in OPTIONS.info_dict:
+    verity_tool = OPTIONS.info_dict["verity_tool"] == "true"
+    if verity_tool:
+      banner("verity_metadata.bin/verity.img")
+      AddMetadataBlockFiles(output_zip)
+
   if has_vendor:
     banner("vendor")
     AddVendor(output_zip)

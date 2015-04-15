@@ -766,6 +766,7 @@ $(if $(INTERNAL_USERIMAGES_SPARSE_EXT_FLAG),$(hide) echo "extfs_sparse_flag=$(IN
 $(if $(mkyaffs2_extra_flags),$(hide) echo "mkyaffs2_extra_flags=$(mkyaffs2_extra_flags)" >> $(1))
 $(hide) echo "selinux_fc=$(SELINUX_FC)" >> $(1)
 $(if $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SUPPORTS_VERITY),$(hide) echo "verity=$(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SUPPORTS_VERITY)" >> $(1))
+$(if $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SUPPORTS_VERITY),$(hide) echo "verity_tool=$(TARGET_USE_SECURITY_DM_VERITY_MODE_WITH_TOOL)" >> $(1))
 $(if $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SUPPORTS_VERITY),$(hide) echo "verity_key=$(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VERITY_SIGNING_KEY)" >> $(1))
 $(if $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SUPPORTS_VERITY),$(hide) echo "verity_signer_cmd=$(VERITY_SIGNER)" >> $(1))
 $(if $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SYSTEM_VERITY_PARTITION),$(hide) echo "system_verity_block_device=$(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SYSTEM_VERITY_PARTITION)" >> $(1))
@@ -1556,7 +1557,9 @@ ifneq ($(OEM_THUMBPRINT_PROPERTIES),)
 	$(hide) echo "oem_fingerprint_properties=$(OEM_THUMBPRINT_PROPERTIES)" >> $(zip_root)/META/misc_info.txt
 endif
 	$(call generate-userimage-prop-dictionary, $(zip_root)/META/misc_info.txt)
+ifneq ($(TARGET_USE_SECURITY_MODE),true)
 	$(hide) ./build/tools/releasetools/make_recovery_patch $(zip_root) $(zip_root)
+endif
 	@# Zip everything up, preserving symlinks
 	$(hide) (cd $(zip_root) && zip -qry ../$(notdir $@) .)
 	@# Run fs_config on all the system, vendor, boot ramdisk,
@@ -1589,17 +1592,25 @@ ifeq ($(TARGET_BUILD_TYPE),debug)
 endif
 name := $(name)-ota-$(FILE_NAME_TAG)
 
-# Don't use --block when pack ota.zip in secureboot mode
-ifneq ($(TARGET_USE_SECURITY_MODE),true)
-  BLOCK_BASED := --block
+# secureboot mode
+ifeq ($(TARGET_USE_SECURITY_MODE),true)
+  SECUREBOOT_MODE := --secureboot
 endif
 
-# Don't use --block when pack ota.zip in dm_verity mode
+# dm-verity mode
 ifeq ($(BUILD_WITH_DM_VERITY),true)
   DM_VERITY := --dm_verity
-ifdef BLOCK_BASED
-  BLOCK_BASED :=
 endif
+
+# secureboot and dm-verity with tool mode
+ifeq ($(TARGET_USE_SECURITY_DM_VERITY_MODE_WITH_TOOL),true)
+ifneq ($(SECUREBOOT_MODE),)
+  SECUREBOOT_MODE :=
+endif
+ifneq ($(DM_VERITY),)
+  DM_VERITY :=
+endif
+  SECURITY_DM_VERITY_MODE_WITH_TOOL := --secureboot_dm_verity_with_tool
 endif
 
 INTERNAL_OTA_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
@@ -1610,17 +1621,23 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	@echo "Package OTA: $@"
 	@echo MKBOOTIMG=$(MKBOOTIMG) \
 	   ./build/tools/releasetools/ota_from_target_files -v \
-	   $(BLOCK_BASED) \
+	   --block \
 	   -p $(HOST_OUT) \
 	   -k $(KEY_CERT_PAIR) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
+	   $(SECUREBOOT_MODE) \
+	   $(DM_VERITY) \
+	   $(SECURITY_DM_VERITY_MODE_WITH_TOOL) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 	$(hide) MKBOOTIMG=$(MKBOOTIMG) \
 	   ./build/tools/releasetools/ota_from_target_files -v \
-	   $(BLOCK_BASED) \
+	   --block \
 	   -p $(HOST_OUT) \
 	   -k $(KEY_CERT_PAIR) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
+	   $(SECUREBOOT_MODE) \
+	   $(DM_VERITY) \
+	   $(SECURITY_DM_VERITY_MODE_WITH_TOOL) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 
 .PHONY: otapackage

@@ -125,6 +125,9 @@ OPTIONS.block_based = False
 OPTIONS.updater_binary = None
 OPTIONS.oem_source = None
 OPTIONS.fallback_to_full = True
+OPTIONS.secureboot_enable = False
+OPTIONS.dm_verity_enable = False
+OPTIONS.SecurebootAndDmverityWithTool_enable = False
 
 def MostPopularKey(d, default):
   """Given a dict, return the key corresponding to the largest
@@ -475,7 +478,296 @@ def UpdateLogo(input_zip, output_zip, script):
     script.WriteRawImage("/logo", "logo.img")
 
 
+def CopyFile(tmpdir, itemset, \
+    input_zip, output_zip, \
+    src_dir, file, des_dir, substitute=None):
+  """Copy file from input zip to the output zip.And you can copy
+  a specific file from src_dir to des_dir.If file is "*",so copy
+  all files,else copy a file only.
+  """
+  if file != "*": path = os.path.join(tmpdir, src_dir, file)
+  else: path = os.path.join(tmpdir, src_dir)
+  if not os.path.exists(path):
+    print "***ERROR: Can't find %s\n" % (path)
+    sys.exit(1)
+
+  if file != "*": print "  copy %s to %s" % \
+    (os.path.join(src_dir, file), des_dir)
+  else: print "  copy %s to %s" % (src_dir, des_dir)
+
+  for info in input_zip.infolist():
+    if info.filename.startswith(src_dir):
+      basefilename = info.filename[len(src_dir):]
+      # copy all files
+      if file == "*":
+        info2 = copy.copy(info)
+        fn = info2.filename = des_dir + basefilename
+        if substitute and fn in substitute and substitute[fn] is None:
+           continue
+        if output_zip is not None:
+           if substitute and fn in substitute:
+             data = substitute[fn]
+           else:
+             data = input_zip.read(info.filename)
+           output_zip.writestr(info2, data)
+        if fn.endswith("/"):
+           itemset.Get(fn[:-1], dir=True)
+        else:
+           itemset.Get(fn, dir=False)
+
+      # copy match file
+      elif basefilename == file:
+        info2 = copy.copy(info)
+        fn = info2.filename = des_dir + basefilename
+        if substitute and fn in substitute and substitute[fn] is None:
+           continue
+        if output_zip is not None:
+           if substitute and fn in substitute:
+             data = substitute[fn]
+           else:
+             data = input_zip.read(info.filename)
+           output_zip.writestr(info2, data)
+        if fn.endswith("/"):
+           itemset.Get(fn[:-1], dir=True)
+        else:
+           itemset.Get(fn, dir=False)
+
+
+def CopySecurebootAndDmverityWithToolFiles(tmpdir, itemset, \
+	input_zip, output_zip, substitute=None):
+  print "start copy secureboot and dm-verity with tool files/dir:"
+  CopyFile(tmpdir, itemset, input_zip, output_zip, \
+    "META/", "*", "SYSTEMINFO/META/")
+  CopyFile(tmpdir, itemset, input_zip, output_zip, \
+    "IMAGES/", "system.img", "SYSTEMINFO/")
+  CopyFile(tmpdir, itemset, input_zip, output_zip, \
+    "IMAGES/", "system.map", "SYSTEMINFO/")
+  CopyFile(tmpdir, itemset, input_zip, output_zip, \
+    "SYSTEM/", "build.prop", "SYSTEMINFO/SYSTEM/")
+  CopyFile(tmpdir, itemset, input_zip, output_zip, \
+    "RECOVERY/RAMDISK/etc/", "recovery.fstab", \
+    "SYSTEMINFO/RECOVERY/RAMDISK/etc/")
+  CopyFile(tmpdir, itemset, input_zip, output_zip, \
+    "IMAGES/", "verity_metadata.bin", "SYSTEMINFO/")
+  CopyFile(tmpdir, itemset, input_zip, output_zip, \
+    "IMAGES/", "verity.img", "SYSTEMINFO/")
+
+
+def WriteSecurebootDmverityFullOTAPackage(input_zip, output_zip):
+  # TODO: how to determine this?  We don't know what version it will
+  # be installed on top of.  For now, we expect the API just won't
+  # change very often.
+  script = edify_generator.EdifyGenerator(3, OPTIONS.info_dict)
+
+  oem_props = OPTIONS.info_dict.get("oem_fingerprint_properties")
+  recovery_mount_options = OPTIONS.info_dict.get("recovery_mount_options")
+  oem_dict = None
+  if oem_props is not None and len(oem_props) > 0:
+    if OPTIONS.oem_source is None:
+      raise common.ExternalError("OEM source required for this build")
+    script.Mount("/oem", recovery_mount_options)
+    oem_dict = common.LoadDictionaryFromLines(open(OPTIONS.oem_source).readlines())
+
+  metadata = {"post-build": CalculateFingerprint(
+                               oem_props, oem_dict, OPTIONS.info_dict),
+              "pre-device": GetOemProperty("ro.product.device", oem_props, oem_dict,
+                               OPTIONS.info_dict),
+              "post-timestamp": GetBuildProp("ro.build.date.utc",
+                               OPTIONS.info_dict),
+              }
+
+  device_specific = common.DeviceSpecificParams(
+      input_zip=input_zip,
+      input_version=OPTIONS.info_dict["recovery_api_version"],
+      output_zip=output_zip,
+      script=script,
+      input_tmp=OPTIONS.input_tmp,
+      metadata=metadata,
+      info_dict=OPTIONS.info_dict)
+
+  has_recovery_patch = HasRecoveryPatch(input_zip)
+
+  """*************************** Notice: ******************************
+  1. Secureboot mode only:
+     --- This mode need recovery.img, not recovery patch.
+  2. Dm-verity mode only:
+     --- This mode need have --block to make makefile.
+  3. Secureboot and Dm-verity non tool mode:
+     --- This mode dm-verity public key and private key are all in code.
+  4. Secureboot and Dm-verity with tool mode:
+     --- This mode public key and private key are all through the
+         encrypt tool to determine.
+  ******************************************************************"""
+  # Secureboot and Dm-verity with tool mode:
+  recoveryimg_exist = 0
+  secureboot_and_dmverity_with_tool = 0
+  if OPTIONS.SecurebootAndDmverityWithTool_enable:
+    print "Secureboot and Dm-verity with tool mode!"
+    secureboot_and_dmverity_with_tool = 1
+    OPTIONS.secureboot_enable = True
+    OPTIONS.dm_verity_enable = True
+    if has_recovery_patch or not OPTIONS.block_based:
+      print "***ERROR: Can't support recovery patch and non block " \
+			"in secureboot and dm-verity with tool mode\n"
+      sys.exit(1)
+
+  # Secureboot and Dm-verity non tool mode:
+  elif OPTIONS.secureboot_enable and OPTIONS.dm_verity_enable:
+    print "Secureboot and Dm-verity non tool mode!"
+    if has_recovery_patch or not OPTIONS.block_based:
+      print "***ERROR: Can't support recovery patch and non block " \
+			"in secureboot and dm-verity non tool mode\n"
+      sys.exit(1)
+
+  else:
+    # Secureboot mode only
+    if OPTIONS.secureboot_enable:
+      print "Secureboot mode only!"
+      if has_recovery_patch:
+        print "***ERROR: Can't support recovery patch in security mode\n"
+        sys.exit(1)
+
+    # Dm-verity mode only
+    elif OPTIONS.dm_verity_enable:
+      print "Dm-verity mode only!"
+      if not OPTIONS.block_based:
+        print "***ERROR: Can't support dm-verity in non block mode\n"
+        sys.exit(1)
+      elif not has_recovery_patch:
+        print "WARNING: Can't find recovery patch in dm-verity mode only," \
+			"so we generate recovery.img forcely\n"
+        #sys.exit(1)
+        recoveryimg_exist = 1
+
+  if OPTIONS.secureboot_enable:
+    recoveryimg_exist = 1
+
+  block_based = OPTIONS.block_based
+
+  if not OPTIONS.omit_prereq:
+    ts = GetBuildProp("ro.build.date.utc", OPTIONS.info_dict)
+    ts_text = GetBuildProp("ro.build.date", OPTIONS.info_dict)
+    script.AssertOlderBuild(ts, ts_text)
+
+  AppendAssertions(script, OPTIONS.info_dict, oem_dict)
+  device_specific.FullOTA_Assertions()
+
+  recovery_img = common.GetBootableImage("recovery.img", "recovery.img",
+                                         OPTIONS.input_tmp, "RECOVERY")
+
+  if OPTIONS.two_step:
+    print "WARNING: Here,don't support two_step for secureboot/dm-verity!\n"
+    sys.exit(1)
+
+  device_specific.FullOTA_InstallBegin()
+
+  system_progress = 0.75
+
+  if OPTIONS.wipe_user_data:
+    system_progress -= 0.1
+  if HasVendorPartition(input_zip):
+    system_progress -= 0.1
+
+  if "selinux_fc" in OPTIONS.info_dict:
+    WritePolicyConfig(OPTIONS.info_dict["selinux_fc"], output_zip)
+
+  recovery_mount_options = OPTIONS.info_dict.get("recovery_mount_options")
+
+  system_items = ItemSet("system", "META/filesystem_config.txt")
+  script.ShowProgress(system_progress, 0)
+
+  if block_based:
+    if secureboot_and_dmverity_with_tool:
+      CopySecurebootAndDmverityWithToolFiles(OPTIONS.input_tmp, \
+				system_items, input_zip, output_zip)
+      # Here,write some messages to script,so tool don't write
+      partition = "system"
+      device = "/dev/block/system"
+      call1 = ("Patching %s image unconditionally...") % (partition,)
+      call2 = (('block_image_update("%s", '
+             'package_extract_file("%s.transfer.list"), '
+             '"%s.new.dat", "%s.patch.dat");\n') %
+            (device, partition, partition, partition))
+      print "write system block information to updater-script:\n%s\n%s" % \
+            (call1, call2)
+      script.Print(call1)
+      script.AppendExtra(script._WordWrap(call2))
+    else:
+      # Full OTA is done as an "incremental" against an empty source
+      # image.  This has the effect of writing new data from the package
+      # to the entire partition, but lets us reuse the updater code that
+      # writes incrementals to do it.
+      system_tgt = GetImage("system", OPTIONS.input_tmp, OPTIONS.info_dict)
+      system_tgt.ResetFileMap()
+      system_diff = common.BlockDifference("system", system_tgt, src=None)
+      system_diff.WriteScript(script, output_zip)
+  else:
+    script.FormatPartition("/system")
+    script.Mount("/system", recovery_mount_options)
+    script.UnpackPackageDir("system", "/system")
+
+    symlinks = CopyPartitionFiles(system_items, input_zip, output_zip)
+    script.MakeSymlinks(symlinks)
+
+  boot_img = common.GetBootableImage("boot.img", "boot.img",
+                                     OPTIONS.input_tmp, "BOOT")
+
+  if HasVendorPartition(input_zip):
+    vendor_items = ItemSet("vendor", "META/vendor_filesystem_config.txt")
+    script.ShowProgress(0.1, 0)
+
+    if block_based:
+      vendor_tgt = GetImage("vendor", OPTIONS.input_tmp, OPTIONS.info_dict)
+      vendor_tgt.ResetFileMap()
+      vendor_diff = common.BlockDifference("vendor", vendor_tgt)
+      vendor_diff.WriteScript(script, output_zip)
+    else:
+      script.FormatPartition("/vendor")
+      script.Mount("/vendor", recovery_mount_options)
+      script.UnpackPackageDir("vendor", "/vendor")
+
+      symlinks = CopyPartitionFiles(vendor_items, input_zip, output_zip)
+      script.MakeSymlinks(symlinks)
+
+      vendor_items.GetMetadata(input_zip)
+      vendor_items.Get("vendor").SetPermissions(script)
+
+  UpdateLogo(input_zip, output_zip, script)
+
+  if recoveryimg_exist:
+    common.CheckSize(recovery_img.data, "recovery.img", OPTIONS.info_dict)
+    common.ZipWriteStr(output_zip, "recovery.img", recovery_img.data)
+    script.ShowProgress(0.05, 5)
+    script.WriteRawImage("/recovery", "recovery.img")
+
+  common.CheckSize(boot_img.data, "boot.img", OPTIONS.info_dict)
+  common.ZipWriteStr(output_zip, "boot.img", boot_img.data)
+  script.ShowProgress(0.05, 5)
+  script.WriteRawImage("/boot", "boot.img")
+
+  script.ShowProgress(0.2, 10)
+  device_specific.FullOTA_InstallEnd()
+
+  if OPTIONS.extra_script is not None:
+    script.AppendExtra(OPTIONS.extra_script)
+
+  script.UnmountAll()
+
+  if OPTIONS.wipe_user_data:
+    script.ShowProgress(0.1, 10)
+    script.FormatPartition("/data")
+
+  script.AddToZip(input_zip, output_zip, input_path=OPTIONS.updater_binary)
+  WriteMetadata(metadata, output_zip)
+
+
 def WriteFullOTAPackage(input_zip, output_zip):
+  if OPTIONS.SecurebootAndDmverityWithTool_enable or \
+    OPTIONS.secureboot_enable or \
+    OPTIONS.dm_verity_enable:
+    print "\nStart to write secureboot/dm-verity full ota package!!!"
+    return WriteSecurebootDmverityFullOTAPackage(input_zip, output_zip)
+
   # TODO: how to determine this?  We don't know what version it will
   # be installed on top of.  For now, we expect the API just won't
   # change very often.
@@ -1493,6 +1785,12 @@ def main(argv):
       OPTIONS.verify = True
     elif o == "--block":
       OPTIONS.block_based = True
+    elif o in ("--secureboot"):
+      OPTIONS.secureboot_enable = True
+    elif o in ("--dm_verity"):
+      OPTIONS.dm_verity_enable = True
+    elif o in ("--secureboot_dm_verity_with_tool"):
+      OPTIONS.SecurebootAndDmverityWithTool_enable = True
     elif o in ("-b", "--binary"):
       OPTIONS.updater_binary = a
     elif o in ("--no_fallback_to_full",):
@@ -1514,6 +1812,9 @@ def main(argv):
                                               "two_step",
                                               "no_signing",
                                               "block",
+                                              "secureboot",
+                                              "dm_verity",
+                                              "secureboot_dm_verity_with_tool",
                                               "binary=",
                                               "oem_settings=",
                                               "verify",
