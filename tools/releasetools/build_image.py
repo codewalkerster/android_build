@@ -28,7 +28,15 @@ import commands
 import shutil
 import tempfile
 
+import common
+OPTIONS = common.OPTIONS
+
 FIXED_SALT = "aee087a5be3b982978c923f566a94613496b417f2af592639bc80d141e34dfe7"
+
+# save build_verity_metadata.py args file and
+# verity.img(system.img.raw.hash) path temporary
+OPTIONS.VERITY_IMAGE = None
+OPTIONS.VERITY_METADATA_BIN = None
 
 def RunCommand(cmd):
   """ Echo and run the given command
@@ -178,22 +186,57 @@ def MakeVerityEnabledImage(out_file, prop_dict):
   # build the metadata blocks
   root_hash = prop_dict["verity_root_hash"]
   salt = prop_dict["verity_salt"]
-  if not BuildVerityMetadata(image_size,
+
+  verity_tool = prop_dict.get("verity_tool") == "true"
+  if verity_tool:
+    # save verity.img
+    verity_image = '%s/verity.img' % os.path.dirname(out_file)
+    shutil.copyfile(verity_image_path, verity_image)
+    OPTIONS.VERITY_IMAGE = verity_image
+    print ">>> verity.img(system.img.raw.hash) file path: %s" % (OPTIONS.VERITY_IMAGE)
+
+    # save verity_metadata.bin
+    verity_metadata_args = \
+              ("# build_verity_metadata.py args list: \
+              \nimage_size:          %s \
+              \nverity_metadata_path:%s \
+              \nroot_hash:           %s \
+              \nsalt:                %s \
+              \nblock_dev:           %s \
+              \nsigner_tool:         %s \
+              \nsigner_key:          %s\n" %
+              (image_size,
+              verity_metadata_path,
+              root_hash,
+              salt,
+              block_dev,
+              signer_path,
+              signer_key))
+    verity_metadata_bin = '%s/verity_metadata.bin' % os.path.dirname(out_file)
+    file = open(verity_metadata_bin, 'w')
+    file.write(verity_metadata_args)
+    file.close()
+    OPTIONS.VERITY_METADATA_BIN = verity_metadata_bin
+    print ">>> verity_metadata.bin file path: %s" % (OPTIONS.VERITY_METADATA_BIN)
+    print verity_metadata_args
+  else:
+    if not BuildVerityMetadata(image_size,
                               verity_metadata_path,
                               root_hash,
                               salt,
                               block_dev,
                               signer_path,
                               signer_key):
-    shutil.rmtree(tempdir_name, ignore_errors=True)
-    return False
+      shutil.rmtree(tempdir_name, ignore_errors=True)
+      return False
 
-  # build the full verified image
-  if not BuildVerifiedImage(out_file,
+  if not verity_tool:
+    # build the full verified image
+    if not BuildVerifiedImage(out_file,
                             verity_image_path,
                             verity_metadata_path):
-    shutil.rmtree(tempdir_name, ignore_errors=True)
-    return False
+      shutil.rmtree(tempdir_name, ignore_errors=True)
+      return False
 
   shutil.rmtree(tempdir_name, ignore_errors=True)
   return True
@@ -312,7 +355,8 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
       "skip_fsck",
       "verity",
       "verity_key",
-      "verity_signer_cmd"
+      "verity_signer_cmd",
+      "verity_tool"
       )
   for p in common_props:
     copy_prop(p, p)
