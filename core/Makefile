@@ -921,7 +921,8 @@ $(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 		$(recovery_fstab) \
 		$(RECOVERY_INSTALL_OTA_KEYS) \
 		$(recovery_busybox) \
-		$(recovery_sh)
+		$(recovery_sh) \
+		$(recovery_systemcontrol)
 	@echo ----- Making recovery image ------
 	$(hide) rm -rf $(TARGET_RECOVERY_OUT)
 	$(hide) mkdir -p $(TARGET_RECOVERY_OUT)
