@@ -291,6 +291,16 @@ class EdifyGenerator(object):
       else:
         raise ValueError("don't know how to write \"%s\" partitions" % (p.fs_type,))
 
+  def WriteDtbImage(self, fn):
+    """Write the given package file into the device."""
+
+    if fn == "dtb.img":
+        args = {'fn': fn}
+        self.script.append(
+            'write_dtb_image(package_extract_file("%(fn)s"));' % args)
+    else:
+        raise ValueError("don't know how to write \"%s\" to device" % (fn,))
+
   def SetPermissions(self, fn, uid, gid, mode, selabel, capabilities):
     """Set file ownership and permissions."""
     if not self.info.get("use_set_metadata", False):

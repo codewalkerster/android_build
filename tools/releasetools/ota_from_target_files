@@ -128,6 +128,7 @@ OPTIONS.fallback_to_full = True
 OPTIONS.secureboot_enable = False
 OPTIONS.dm_verity_enable = False
 OPTIONS.SecurebootAndDmverityWithTool_enable = False
+OPTIONS.update_dtb = False
 
 def MostPopularKey(d, default):
   """Given a dict, return the key corresponding to the largest
@@ -478,6 +479,21 @@ def UpdateLogo(input_zip, output_zip, script):
     script.WriteRawImage("/logo", "logo.img")
 
 
+def UpdateDtb(input_zip, output_zip, script):
+  dtb_img_exists = 0
+  try:
+    dtb_img_info = input_zip.getinfo("DTB/dtb")
+    dtb_img_exists = 1
+    dtb_img = common.File("dtb.img", input_zip.read("DTB/dtb"))
+  except KeyError:
+    print 'ERROR: Did not find dtb'
+    sys.exit(1)
+
+  if dtb_img_exists:
+    common.ZipWriteStr(output_zip, "dtb.img", dtb_img.data)
+    script.WriteDtbImage("dtb.img")
+
+
 def CopyFile(tmpdir, itemset, \
     input_zip, output_zip, \
     src_dir, file, des_dir, substitute=None):
@@ -734,6 +750,9 @@ def WriteSecurebootDmverityFullOTAPackage(input_zip, output_zip):
 
   UpdateLogo(input_zip, output_zip, script)
 
+  if OPTIONS.update_dtb:
+      UpdateDtb(input_zip, output_zip, script)
+
   if recoveryimg_exist:
     common.CheckSize(recovery_img.data, "recovery.img", OPTIONS.info_dict)
     common.ZipWriteStr(output_zip, "recovery.img", recovery_img.data)
@@ -920,6 +939,9 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
       vendor_items.Get("vendor").SetPermissions(script)
 
   UpdateLogo(input_zip, output_zip, script)
+
+  if OPTIONS.update_dtb:
+      UpdateDtb(input_zip, output_zip, script)
 
   common.CheckSize(boot_img.data, "boot.img", OPTIONS.info_dict)
   common.ZipWriteStr(output_zip, "boot.img", boot_img.data)
@@ -1438,6 +1460,12 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
   target_bootloader = common.File("bootloader.img", target_zip.read("BOOTLOADER/bootloader"));
   updating_bootloader = (source_bootloader.data != target_bootloader.data);
 
+  updating_dtb = False
+  if OPTIONS.update_dtb:
+    source_dtb = common.File("dtb.img", source_zip.read("DTB/dtb"));
+    target_dtb = common.File("dtb.img", target_zip.read("DTB/dtb"));
+    updating_dtb = (source_dtb.data != target_dtb.data);
+
   source_boot = common.GetBootableImage(
       "/tmp/boot.img", "boot.img", OPTIONS.source_tmp, "BOOT",
       OPTIONS.source_info_dict)
@@ -1531,7 +1559,7 @@ else if get_stage("%(bcb_dev)s") != "3/3" then
   if system_diff.patch_list: size.append(system_diff.largest_source_size)
   if vendor_diff:
     if vendor_diff.patch_list: size.append(vendor_diff.largest_source_size)
-  if size or updating_recovery or updating_boot or updating_bootloader:
+  if size or updating_recovery or updating_boot or updating_bootloader or updating_dtb:
     script.CacheFreeSpaceCheck(max(size))
 
   device_specific.IncrementalOTA_VerifyEnd()
@@ -1570,6 +1598,19 @@ else
   if vendor_diff:
     script.Print("Patching vendor files...")
     so_far = vendor_diff.EmitPatches(script, total_patch_size, so_far)
+
+  if updating_dtb:
+    script.Print("install dtb image...");
+    print("update dtb image from %d:%s to %d:%s" %
+                      (source_dtb.size, source_dtb.sha1,
+                       target_dtb.size, target_dtb.sha1))
+    common.ZipWriteStr(output_zip, "dtb.img", target_dtb.data)
+    script.WriteDtbImage("dtb.img")
+    so_far += target_dtb.size
+    script.SetProgress(so_far / total_patch_size)
+    print "dtb image changed; including."
+  else:
+    print "dtb image unchanged; skipping."
 
   if updating_bootloader:
     script.Print("install bootloader image...");
@@ -1791,6 +1832,8 @@ def main(argv):
       OPTIONS.dm_verity_enable = True
     elif o in ("--secureboot_dm_verity_with_tool"):
       OPTIONS.SecurebootAndDmverityWithTool_enable = True
+    elif o in ("--dtb"):
+      OPTIONS.update_dtb = True
     elif o in ("-b", "--binary"):
       OPTIONS.updater_binary = a
     elif o in ("--no_fallback_to_full",):
@@ -1815,6 +1858,7 @@ def main(argv):
                                               "secureboot",
                                               "dm_verity",
                                               "secureboot_dm_verity_with_tool",
+                                              "dtb",
                                               "binary=",
                                               "oem_settings=",
                                               "verify",

@@ -1501,6 +1501,10 @@ ifdef INSTALLED_2NDBOOTLOADER_TARGET
 		$(INSTALLED_2NDBOOTLOADER_TARGET) $(zip_root)/BOOT/second
 endif
 ifdef INSTALLED_BOARDDTB_TARGET
+ifeq ($(strip $(TARGET_OTA_UPDATE_DTB)),true)
+	$(hide) mkdir -p $(zip_root)/DTB
+	$(hide) $(ACP) $(INSTALLED_BOARDDTB_TARGET) $(zip_root)/DTB/dtb
+endif
 	$(hide) $(ACP) $(INSTALLED_BOARDDTB_TARGET) $(zip_root)/BOOT/second
 endif
 ifdef BOARD_KERNEL_CMDLINE
@@ -1622,6 +1626,10 @@ ifneq ($(TARGET_USE_BLOCK_BASE_UPGRADE),false)
   BLOCK_BASE := --block
 endif
 
+ifeq ($(strip $(TARGET_OTA_UPDATE_DTB)),true)
+  UPDATE_DTB := --dtb
+endif
+
 # secureboot and dm-verity with tool mode
 ifeq ($(TARGET_USE_SECURITY_DM_VERITY_MODE_WITH_TOOL),true)
 ifneq ($(SECUREBOOT_MODE),)
@@ -1642,6 +1650,7 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	@echo MKBOOTIMG=$(MKBOOTIMG) \
 	   ./build/tools/releasetools/ota_from_target_files -v \
 	   $(BLOCK_BASE) \
+	   $(UPDATE_DTB) \
 	   -p $(HOST_OUT) \
 	   -k $(KEY_CERT_PAIR) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
@@ -1652,6 +1661,7 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	$(hide) MKBOOTIMG=$(MKBOOTIMG) \
 	   ./build/tools/releasetools/ota_from_target_files -v \
 	   $(BLOCK_BASE) \
+	   $(UPDATE_DTB) \
 	   -p $(HOST_OUT) \
 	   -k $(KEY_CERT_PAIR) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
