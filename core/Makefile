@@ -425,7 +425,11 @@ ALL_DEFAULT_INSTALLED_MODULES += $(event_log_tags_file)
 ifneq ($(strip $(TARGET_NO_BOOTLOADER)),true)
   amlogic_bootloader := $(strip $(wildcard $(TARGET_DEVICE_DIR)/u-boot.bin))
   ifneq ($(amlogic_bootloader),)
-    INSTALLED_BOOTLOADER_MODULE := $(PRODUCT_OUT)/u-boot.bin
+	ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	    INSTALLED_BOOTLOADER_MODULE := $(PRODUCT_OUT)/u-boot.bin.encrypt
+	else
+	    INSTALLED_BOOTLOADER_MODULE := $(PRODUCT_OUT)/u-boot.bin
+	endif # ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
   else
     INSTALLED_BOOTLOADER_MODULE := $(PRODUCT_OUT)/bootloader
   endif
@@ -443,6 +447,32 @@ ifneq ($(strip $(TARGET_NO_KERNEL)),true)
 else
   INSTALLED_KERNEL_TARGET :=
 endif
+
+ifeq ($(TARGET_USE_SECURITY_MODE),true)
+	ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+		$(warning * TARGET_USE_SECURITY_MODE is for m8/m8b secure boot enable,  )
+		$(warning * PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY is for compling out encrypted image directly on gxbaby ,  )
+		$(warning Should not be ture at the same time*********************************************)
+		$(error stopping)
+	endif
+endif
+
+INSTALLED_AMLOGIC_BOOTLOADER_TARGET := $(PRODUCT_OUT)/u-boot.bin
+$(INSTALLED_AMLOGIC_BOOTLOADER_TARGET) : $(TARGET_DEVICE_DIR)/u-boot.bin
+	@echo "make $@: bootloader installed start"
+ifeq ($(TARGET_USE_SECURITY_MODE),true)
+	$(hide) $(ACP) $(TARGET_PRODUCT)/u-boot.bin.aml $(PRODUCT_OUT)/u-boot.bin
+else
+	$(hide) $(ACP) $(TARGET_DEVICE_DIR)/u-boot.bin $(PRODUCT_OUT)/u-boot.bin
+endif
+ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	$(hide) $(PRODUCT_AML_SECUREBOOT_SIGNTOOL) --bootsig \
+		--amluserkey $(PRODUCT_AML_SECUREBOOT_USERKEY) \
+		--aeskey enable \
+		--input $(PRODUCT_OUT)/u-boot.bin \
+		--output $(PRODUCT_OUT)/u-boot.bin.encrypt
+endif # ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	@echo "make $@: bootloader installed end"
 
 # Analysis BOARD_MKBOOTIMG_ARGS
 ifneq ($(strip $(filter --%,$(BOARD_MKBOOTIMG_ARGS))),)
@@ -512,6 +542,7 @@ ifdef BOARD_KERNEL_OFFSET
   INTERNAL_BOOTIMAGE_ARGS += --kernel_offset $(BOARD_KERNEL_OFFSET)
 endif
 
+
 INSTALLED_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/boot.img
 
 ifeq ($(TARGET_BOOTIMAGE_USE_EXT2),true)
@@ -569,6 +600,14 @@ $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_FILES)
 	$(call pretty,"Target boot image: $@")
 	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) --output $@
 	$(hide) $(call assert-max-image-size,$@,$(BOARD_BOOTIMAGE_PARTITION_SIZE))
+ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	$(hide) $(PRODUCT_AML_SECUREBOOT_SIGNTOOL) --imgsig \
+		--amluserkey $(PRODUCT_AML_SECUREBOOT_USERKEY) \
+		--input $(INSTALLED_BOOTIMAGE_TARGET) \
+		--output $(INSTALLED_BOOTIMAGE_TARGET).encrypt
+	$(hide) @echo "$@: installed encrypted kernel"
+endif # ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+
 
 .PHONY: bootimage-nodeps
 bootimage-nodeps: $(MKBOOTIMG)
@@ -987,6 +1026,13 @@ ifeq (true,$(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SUPPORTS_VERITY))
 	$(BOOT_SIGNER) /recovery $@ $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VERITY_SIGNING_KEY).pk8 $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VERITY_SIGNING_KEY).x509.pem $@
 endif
 	$(hide) $(call assert-max-image-size,$@,$(BOARD_RECOVERYIMAGE_PARTITION_SIZE))
+ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	$(hide) $(PRODUCT_AML_SECUREBOOT_SIGNTOOL) --imgsig \
+		--amluserkey $(PRODUCT_AML_SECUREBOOT_USERKEY) \
+		--input $(INSTALLED_RECOVERYIMAGE_TARGET) \
+		--output $(INSTALLED_RECOVERYIMAGE_TARGET).encrypt
+	@echo ----- encrypted recovery image created--------
+endif # ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
 	@echo ----- Made recovery image: $@ --------
 
 $(RECOVERY_RESOURCE_ZIP): $(INSTALLED_RECOVERYIMAGE_TARGET)
@@ -1444,6 +1490,7 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 		$(INSTALLED_SYSTEMIMAGE) \
 		$(INSTALLED_USERDATAIMAGE_TARGET) \
 		$(INSTALLED_CACHEIMAGE_TARGET) \
+		$(INSTALLED_AMLOGIC_BOOTLOADER_TARGET) \
 		$(INSTALLED_VENDORIMAGE_TARGET) \
 		$(INSTALLED_ANDROID_INFO_TXT_TARGET) \
 		$(SELINUX_FC) \
@@ -1577,9 +1624,20 @@ ifneq ($(OEM_THUMBPRINT_PROPERTIES),)
 	$(hide) echo "oem_fingerprint_properties=$(OEM_THUMBPRINT_PROPERTIES)" >> $(zip_root)/META/misc_info.txt
 endif
 	$(call generate-userimage-prop-dictionary, $(zip_root)/META/misc_info.txt)
+
+ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	$(hide) mkdir -p $(zip_root)/IMAGES
+	$(hide) rm -f $(zip_root)/IMAGES/*
+	$(hide) $(ACP) $(INSTALLED_BOOTIMAGE_TARGET).encrypt $(zip_root)/IMAGES/boot.img
+	$(hide) $(ACP) $(INSTALLED_RECOVERYIMAGE_TARGET).encrypt $(zip_root)/IMAGES/recovery.img
+else
+	$(hide) rm -f $(zip_root)/IMAGES/*
+endif#ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+
 ifneq ($(TARGET_USE_SECURITY_MODE),true)
 	$(hide) ./build/tools/releasetools/make_recovery_patch $(zip_root) $(zip_root)
 endif
+
 	@# Zip everything up, preserving symlinks
 	$(hide) (cd $(zip_root) && zip -qry ../$(notdir $@) .)
 	@# Run fs_config on all the system, vendor, boot ramdisk,

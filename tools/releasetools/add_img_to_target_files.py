@@ -251,8 +251,8 @@ def AddImagesToTargetFiles(filename):
   if not OPTIONS.add_missing:
     for n in input_zip.namelist():
       if n.startswith("IMAGES/"):
-        print "target_files appears to already contain images."
-        sys.exit(1)
+        print "target_files appears to already contain images.", n
+        #sys.exit(1)
 
   try:
     input_zip.getinfo("VENDOR/")
