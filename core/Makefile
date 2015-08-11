@@ -919,6 +919,7 @@ recovery_remote := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/remotecfg))
 recovery_remote_conf := $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/remote.conf))
 recovery_systemcontrol := $(PRODUCT_OUT)/utilities/systemcontrol_static
 recovery_mesondisplay_cfg := $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/mesondisplay.cfg))
+recovery_usb_ko := $(strip $(wildcard $(TARGET_OUT)/lib/dwc_otg.ko))
 
 INTERNAL_RECOVERYIMAGE_ARGS := \
 	$(addprefix --second ,$(INSTALLED_2NDBOOTLOADER_TARGET)) \
@@ -1022,6 +1023,9 @@ ifneq ($(recovery_systemcontrol),)
 endif
 ifneq ($(recovery_mesondisplay_cfg),)
 	$(hide) cp -f $(recovery_mesondisplay_cfg) $(TARGET_RECOVERY_ROOT_OUT)/etc/
+endif
+ifneq ($(recovery_usb_ko),)
+	$(hide) cp -f $(recovery_usb_ko) $(TARGET_RECOVERY_ROOT_OUT)/boot/
 endif
 ifneq ($(recovery_sh),)
 	$(hide) cp -f $(recovery_sh) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
