@@ -1650,9 +1650,9 @@ ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
 else
 endif#ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
 
-ifneq ($(TARGET_USE_SECURITY_MODE),true)
+ifeq ($(TARGET_USE_RECOVERY_FROM_BOOT_P),true) #default no using recovry-form-boot.p
 	$(hide) ./build/tools/releasetools/make_recovery_patch $(zip_root) $(zip_root)
-endif
+endif #ifeq ($(TARGET_USE_RECOVERY_FROM_BOOT_P),true)
 
 	@# Zip everything up, preserving symlinks
 	$(hide) (cd $(zip_root) && zip -qry ../$(notdir $@) .)
