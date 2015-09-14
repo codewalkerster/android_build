@@ -504,6 +504,9 @@ function lunch()
     elif (echo -n $answer | grep -q -e "^[^\-][^\-]*-[^\-][^\-]*$")
     then
         selection=$answer
+    elif (echo -n $answer | grep -q -e "^[^\-][^\-]*-[^\-][^\-]*-[^\-][^\-]*$")
+    then
+        selection=$answer
     fi
 
     if [ -z "$selection" ]
@@ -525,7 +528,7 @@ function lunch()
         product=
     fi
 
-    local variant=$(echo -n $selection | sed -e "s/^[^\-]*-//")
+    local variant=$(echo -n $selection | sed -e "s/^[^\-]*-//" | sed -e "s/-.*$//")
     check_variant $variant
     if [ $? -ne 0 ]
     then
@@ -534,6 +537,8 @@ function lunch()
         echo "** Must be one of ${VARIANT_CHOICES[@]}"
         variant=
     fi
+
+    local android_build_type=$(echo -n $selection | sed -e "s/$product-$variant//" | sed -e"s/-//")
 
     if [ -z "$product" -o -z "$variant" ]
     then
@@ -544,7 +549,11 @@ function lunch()
     export TARGET_PRODUCT=$product
     export TARGET_BUILD_VARIANT=$variant
     export TARGET_BUILD_TYPE=release
-
+    if [ -n "$android_build_type" ]
+    then
+        echo "ANDROID_BUILD_TYPE=$android_build_type"
+        export ANDROID_BUILD_TYPE=$android_build_type
+    fi
     echo
 
     set_stuff_for_environment
