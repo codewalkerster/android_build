@@ -486,6 +486,11 @@ ifdef BOARD_KERNEL_PAGESIZE
   INTERNAL_BOOTIMAGE_ARGS += --pagesize $(BOARD_KERNEL_PAGESIZE)
 endif
 
+BOARD_KERNEL_OFFSET := $(strip $(BOARD_KERNEL_OFFSET))
+ifdef BOARD_KERNEL_OFFSET
+  INTERNAL_BOOTIMAGE_ARGS += --kernel_offset $(BOARD_KERNEL_OFFSET)
+endif
+
 INSTALLED_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/boot.img
 
 ifeq ($(TARGET_BOOTIMAGE_USE_EXT2),true)
@@ -813,6 +818,10 @@ endif
 BOARD_KERNEL_PAGESIZE := $(strip $(BOARD_KERNEL_PAGESIZE))
 ifdef BOARD_KERNEL_PAGESIZE
   INTERNAL_RECOVERYIMAGE_ARGS += --pagesize $(BOARD_KERNEL_PAGESIZE)
+endif
+BOARD_KERNEL_OFFSET := $(strip $(BOARD_KERNEL_OFFSET))
+ifdef BOARD_KERNEL_OFFSET
+  INTERNAL_RECOVERYIMAGE_ARGS += --kernel_offset $(BOARD_KERNEL_OFFSET)
 endif
 
 # Keys authorized to sign OTA packages this build will accept.  The
@@ -1359,6 +1368,9 @@ endif
 ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/RECOVERY/pagesize
 endif
+ifdef BOARD_KERNEL_OFFSET
+	$(hide) echo "$(BOARD_KERNEL_OFFSET)" > $(zip_root)/RECOVERY/kernel_offset
+endif
 	@# Components of the boot image
 	$(hide) mkdir -p $(zip_root)/BOOT
 	$(hide) $(call package_files-copy-root, \
@@ -1378,6 +1390,9 @@ ifdef BOARD_KERNEL_BASE
 endif
 ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/BOOT/pagesize
+endif
+ifdef BOARD_KERNEL_OFFSET
+	$(hide) echo "$(BOARD_KERNEL_OFFSET)" > $(zip_root)/BOOT/kernel_offset
 endif
 	$(hide) $(foreach t,$(INSTALLED_RADIOIMAGE_TARGET),\
 	            mkdir -p $(zip_root)/RADIO; \
