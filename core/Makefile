@@ -842,6 +842,8 @@ $(RECOVERY_INSTALL_OTA_KEYS): $(OTA_PUBLIC_KEYS) $(DUMPKEY_JAR) $(extra_keys)
 	@mkdir -p $(dir $@)
 	java -jar $(DUMPKEY_JAR) $(PRIVATE_OTA_PUBLIC_KEYS) $(extra_keys) > $@
 
+recovery_systemcontrol := $(PRODUCT_OUT)/utilities/systemcontrol_static
+
 $(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 		$(INSTALLED_RAMDISK_TARGET) \
 		$(INSTALLED_BOOTIMAGE_TARGET) \
@@ -850,6 +852,7 @@ $(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 		$(INSTALLED_2NDBOOTLOADER_TARGET) \
 		$(recovery_build_prop) $(recovery_resource_deps) \
 		$(recovery_fstab) \
+		$(recovery_systemcontrol) \
 		$(RECOVERY_INSTALL_OTA_KEYS)
 	@echo ----- Making recovery image ------
 	$(hide) rm -rf $(TARGET_RECOVERY_OUT)
@@ -862,7 +865,14 @@ $(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 	$(hide) cp -f $(recovery_initrc) $(TARGET_RECOVERY_ROOT_OUT)/
 	$(hide) rm -f $(TARGET_RECOVERY_ROOT_OUT)/sepolicy
 	$(hide) cp -f $(recovery_sepolicy) $(TARGET_RECOVERY_ROOT_OUT)/sepolicy
-	$(hide) -cp $(TARGET_ROOT_OUT)/init.recovery.*.rc $(TARGET_RECOVERY_ROOT_OUT)/
+	$(hide) -cp $(TARGET_DEVICE_DIR)/recovery/init.recovery.*.rc $(TARGET_RECOVERY_ROOT_OUT)/
+	$(hide) cp -f $(TARGET_DEVICE_DIR)/recovery/recovery.fstab $(TARGET_RECOVERY_ROOT_OUT)/etc
+	$(hide) cp -af $(PRODUCT_OUT)/utilities/busybox/bin $(TARGET_RECOVERY_ROOT_OUT)/
+	$(hide) cp $(PRODUCT_OUT)/system/bin/sh $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+	$(hide) cp $(recovery_systemcontrol) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+	$(hide) cp $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/mesondisplay.cfg)) $(TARGET_RECOVERY_ROOT_OUT)/etc/
+	$(hide) cp $(PRODUCT_OUT)/system/bin/remotecfg $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+	$(hide) cp $(PRODUCT_OUT)/system/etc/remote.conf $(TARGET_RECOVERY_ROOT_OUT)/etc/
 	$(hide) cp -f $(recovery_binary) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	$(hide) mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/res
 	$(hide) rm -rf $(TARGET_RECOVERY_ROOT_OUT)/res/*
