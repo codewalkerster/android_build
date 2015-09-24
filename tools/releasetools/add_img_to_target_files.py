@@ -65,7 +65,7 @@ def AddMetadataBlockFiles(output_zip, prefix="IMAGES/"):
     common.ZipWriteStr(output_zip, prefix + "verity.img", f.read())
 
 
-def AddSystem(output_zip, prefix="IMAGES/", recovery_img=None, boot_img=None):
+def AddSystem(output_zip, prefix="IMAGES/", recovery_img=None, boot_img=None, verity_tool = False):
   """Turn the contents of SYSTEM into a system image and store it in
   output_zip."""
 
@@ -91,7 +91,10 @@ def AddSystem(output_zip, prefix="IMAGES/", recovery_img=None, boot_img=None):
     common.ZipWriteStr(output_zip, prefix + "system.img", f.read())
   with open(block_list, "rb") as f:
     common.ZipWriteStr(output_zip, prefix + "system.map", f.read())
-
+  if verity_tool :
+    for vry_item in ("verity.img", "verity_table.bin") :
+      with open(os.path.join(os.path.dirname(imgname), vry_item), "rb") as f:
+        common.ZipWriteStr(output_zip, prefix + vry_item, f.read())
 
 def BuildSystem(input_dir, info_dict, block_list=None):
   """Build the (sparse) system image and return the name of a temp
@@ -300,14 +303,10 @@ def AddImagesToTargetFiles(filename):
     if recovery_image:
       recovery_image.AddToZip(output_zip)
 
-  banner("system")
-  AddSystem(output_zip, recovery_img=recovery_image, boot_img=boot_image)
-  if "verity_tool" in OPTIONS.info_dict:
-    verity_tool = OPTIONS.info_dict["verity_tool"] == "true"
-    if verity_tool:
-      banner("verity_metadata.bin/verity.img")
-      AddMetadataBlockFiles(output_zip)
-
+  banner("system") 
+  verity_tool = OPTIONS.info_dict.get("verity_tool") == "true"
+  AddSystem(output_zip, recovery_img=recovery_image, boot_img=boot_image, verity_tool = verity_tool)
+    
   if has_vendor:
     banner("vendor")
     AddVendor(output_zip)

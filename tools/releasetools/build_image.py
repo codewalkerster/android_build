@@ -187,48 +187,23 @@ def MakeVerityEnabledImage(out_file, prop_dict):
   root_hash = prop_dict["verity_root_hash"]
   salt = prop_dict["verity_salt"]
 
+  if not BuildVerityMetadata(image_size,
+                            verity_metadata_path,
+                            root_hash,
+                            salt,
+                            block_dev,
+                            signer_path,
+                            signer_key):
+    shutil.rmtree(tempdir_name, ignore_errors=True)
+    return False
+
   verity_tool = prop_dict.get("verity_tool") == "true"
   if verity_tool:
     # save verity.img
-    verity_image = '%s/verity.img' % os.path.dirname(out_file)
+    verity_image = os.path.join(os.path.dirname(out_file), "verity.img")
+    verity_table = os.path.join(os.path.dirname(out_file), "verity_table.bin")
     shutil.copyfile(verity_image_path, verity_image)
-    OPTIONS.VERITY_IMAGE = verity_image
-    print ">>> verity.img(system.img.raw.hash) file path: %s" % (OPTIONS.VERITY_IMAGE)
-
-    # save verity_metadata.bin
-    verity_metadata_args = \
-              ("# build_verity_metadata.py args list: \
-              \nimage_size:          %s \
-              \nverity_metadata_path:%s \
-              \nroot_hash:           %s \
-              \nsalt:                %s \
-              \nblock_dev:           %s \
-              \nsigner_tool:         %s \
-              \nsigner_key:          %s\n" %
-              (image_size,
-              verity_metadata_path,
-              root_hash,
-              salt,
-              block_dev,
-              signer_path,
-              signer_key))
-    verity_metadata_bin = '%s/verity_metadata.bin' % os.path.dirname(out_file)
-    file = open(verity_metadata_bin, 'w')
-    file.write(verity_metadata_args)
-    file.close()
-    OPTIONS.VERITY_METADATA_BIN = verity_metadata_bin
-    print ">>> verity_metadata.bin file path: %s" % (OPTIONS.VERITY_METADATA_BIN)
-    print verity_metadata_args
-  else:
-    if not BuildVerityMetadata(image_size,
-                              verity_metadata_path,
-                              root_hash,
-                              salt,
-                              block_dev,
-                              signer_path,
-                              signer_key):
-      shutil.rmtree(tempdir_name, ignore_errors=True)
-      return False
+    shutil.copyfile(verity_metadata_path + ".tab", verity_table)
 
   if not verity_tool:
     # build the full verified image
