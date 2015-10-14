@@ -873,9 +873,9 @@ ifneq ($(TARGET_RECOVERY_DISABLE_ADB_SIDELOAD),true)
   recovery_initrc := $(strip $(wildcard $(TARGET_RELEASETOOLS_EXTENSIONS)/recovery/init.rc))
 endif
 
-amlogic_recovery_initrc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/init.recovery.*.rc))
-ifneq ($(amlogic_recovery_initrc),)
-  recovery_amlogic_initrc := $(amlogic_recovery_initrc)
+recovery_amlogic_initrc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/init.recovery.*.rc))
+ifneq ($(recovery_amlogic_initrc),)
+  recovery_amlogic_initrc := $(recovery_amlogic_initrc)
 endif
 
 recovery_sh := $(TARGET_OUT)/bin/sh
@@ -950,7 +950,7 @@ recovery_remote := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/remotecfg))
 recovery_remote_conf := $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/remote.conf))
 recovery_systemcontrol := $(PRODUCT_OUT)/utilities/systemcontrol_static
 recovery_mesondisplay_cfg := $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/mesondisplay.cfg))
-recovery_usb_ko := $(strip $(wildcard $(TARGET_OUT)/lib/dwc_otg.ko))
+recovery_usb_ko := $(TARGET_OUT)/lib/dwc_otg.ko
 
 INTERNAL_RECOVERYIMAGE_ARGS := \
 	$(addprefix --second ,$(INSTALLED_2NDBOOTLOADER_TARGET)) \
@@ -1026,43 +1026,21 @@ define build-recoveryimage-target
   $(hide) cp $(RECOVERY_INSTALL_OTA_KEYS) $(TARGET_RECOVERY_ROOT_OUT)/res/keys
   $(hide) cat $(INSTALLED_DEFAULT_PROP_TARGET) $(recovery_build_prop) \
           > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
-ifneq ($(recovery_amlogic_initrc),)
-  $(hide) cp $(recovery_amlogic_initrc) $(TARGET_RECOVERY_ROOT_OUT)
-endif
-ifneq ($(recovery_kl),)
-  $(hide) cp -f $(recovery_kl) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.kl
-endif
-ifneq ($(TARGET_RECOVERY_NO_BUSYBOX),true)
-ifneq ($(recovery_busybox),)
-  $(hide) cp -f $(recovery_busybox) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
-endif
-endif
-ifneq ($(recovery_remote),)
-  $(hide) cp -f $(recovery_remote) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
-endif
-ifneq ($(recovery_remote_conf),)
-  $(hide) cp -f $(recovery_remote_conf) $(TARGET_RECOVERY_ROOT_OUT)/etc/
-endif
-ifneq ($(recovery_systemcontrol),)
-  $(hide) cp -f $(recovery_systemcontrol) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
-endif
-ifneq ($(recovery_mesondisplay_cfg),)
-  $(hide) cp -f $(recovery_mesondisplay_cfg) $(TARGET_RECOVERY_ROOT_OUT)/etc/
-endif
-ifneq ($(recovery_usb_ko),)
-  $(hide) cp -f $(recovery_usb_ko) $(TARGET_RECOVERY_ROOT_OUT)/boot/
-endif
-ifneq ($(recovery_sh),)
-  $(hide) cp -f $(recovery_sh) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
-endif
-ifneq ($(TARGET_RECOVERY_DISABLE_ADB_SIDELOAD),true)
-ifneq (,$(filter user,$(TARGET_BUILD_VARIANT)))
-  $(hide) sed 's/ro.debuggable=0/ro.debuggable=1/' $(TARGET_RECOVERY_ROOT_OUT)/default.prop \
-          > $(TARGET_RECOVERY_ROOT_OUT)/tmp.prop
-  $(hide) cat $(TARGET_RECOVERY_ROOT_OUT)/tmp.prop > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
-  $(hide) rm $(TARGET_RECOVERY_ROOT_OUT)/tmp.prop
-endif
-endif
+  $(hide) -cp $(recovery_amlogic_initrc) $(TARGET_RECOVERY_ROOT_OUT) || true
+  $(hide) -cp -f $(recovery_kl) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.kl || true
+  $(if $(filter true,$(TARGET_RECOVERY_NO_BUSYBOX)),, \
+    $(hide) -cp -f $(recovery_busybox) $(TARGET_RECOVERY_ROOT_OUT)/sbin/) || true
+  $(hide) -cp -f $(recovery_remote) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
+  $(hide) -cp -f $(recovery_remote_conf) $(TARGET_RECOVERY_ROOT_OUT)/etc/ || true
+  $(hide) -cp -f $(recovery_systemcontrol) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
+  $(hide) -cp -f $(recovery_mesondisplay_cfg) $(TARGET_RECOVERY_ROOT_OUT)/etc/ || true
+  $(hide) -cp -f $(recovery_usb_ko) $(TARGET_RECOVERY_ROOT_OUT)/boot/ || true
+  $(hide) -cp -f $(recovery_sh) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
+  $(if $(filter true,$(TARGET_RECOVERY_DISABLE_ADB_SIDELOAD)),, \
+    $(shell sed 's/ro.debuggable=0/ro.debuggable=1/' $(TARGET_RECOVERY_ROOT_OUT)/default.prop \
+                > $(TARGET_RECOVERY_ROOT_OUT)/tmp.prop; \
+            cat $(TARGET_RECOVERY_ROOT_OUT)/tmp.prop > $(TARGET_RECOVERY_ROOT_OUT)/default.prop; \
+            rm $(TARGET_RECOVERY_ROOT_OUT)/tmp.prop;))
   $(hide) $(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_RECOVERY_ROOT_OUT) | $(MINIGZIP) > $(recovery_ramdisk)
   $(if $(filter true,$(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SUPPORTS_VBOOT)), \
     $(hide) $(MKBOOTIMG) $(INTERNAL_RECOVERYIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --output $(1).unsigned, \
@@ -1723,7 +1701,6 @@ ifneq ($(OEM_THUMBPRINT_PROPERTIES),)
 	$(hide) echo "oem_fingerprint_properties=$(OEM_THUMBPRINT_PROPERTIES)" >> $(zip_root)/META/misc_info.txt
 endif
 	$(call generate-userimage-prop-dictionary, $(zip_root)/META/misc_info.txt)
-<<<<<<< HEAD
 
 	$(hide) rm -f $(zip_root)/IMAGES/*
 ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
