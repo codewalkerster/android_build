@@ -93,6 +93,9 @@ endif
 
 ORIGINAL_MAKECMDGOALS := $(MAKECMDGOALS)
 
+# Include prebuild.mk
+-include device/rockchip/common/prebuild.mk
+
 # Targets that provide quick help on the build system.
 include $(BUILD_SYSTEM)/help.mk
 
