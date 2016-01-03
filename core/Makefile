@@ -244,6 +244,9 @@ build_desc :=
 
 ifeq (,$(filter true, $(TARGET_NO_KERNEL) $(TARGET_NO_RECOVERY)))
 INSTALLED_RECOVERYIMAGE_TARGET := $(PRODUCT_OUT)/recovery.img
+ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	INSTALLED_RECOVERYIMAGE_TARGET := $(INSTALLED_RECOVERYIMAGE_TARGET).encrypt
+endif#ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
 else
 INSTALLED_RECOVERYIMAGE_TARGET :=
 endif
@@ -427,10 +430,9 @@ event-log-tags: $(event_log_tags_file)
 
 ALL_DEFAULT_INSTALLED_MODULES += $(event_log_tags_file)
 
-ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
-	INSTALLED_AMLOGIC_BOOTLOADER_TARGET := $(PRODUCT_OUT)/u-boot.bin.encrypt
-else
 	INSTALLED_AMLOGIC_BOOTLOADER_TARGET := $(PRODUCT_OUT)/u-boot.bin
+ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	INSTALLED_AMLOGIC_BOOTLOADER_TARGET := $(INSTALLED_AMLOGIC_BOOTLOADER_TARGET).encrypt
 endif# ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
 
 # #################################################################
@@ -474,26 +476,14 @@ ifeq ($(TARGET_USE_SECURITY_MODE),true)
 else
 	$(hide) cp $(TARGET_DEVICE_DIR)/u-boot.bin $(PRODUCT_OUT)/u-boot.bin
 endif
-ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
-	$(hide) $(PRODUCT_AML_SECUREBOOT_SIGNBOOTLOADER) --input $(PRODUCT_OUT)/u-boot.bin --output $@
-endif # ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	$(hide) $(call aml-secureboot-sign-bootloader, $@)
 	@echo "make $@: bootloader installed end"
 
 # Analysis BOARD_MKBOOTIMG_ARGS
 ifneq ($(strip $(filter --%,$(BOARD_MKBOOTIMG_ARGS))),)
-ifneq ($(strip $(filter --second,$(BOARD_MKBOOTIMG_ARGS))),)
-  BOARD_MKBOOTIMG_ARGS_TMP := $(strip $(filter-out --second,$(BOARD_MKBOOTIMG_ARGS)))
-ifneq ($(strip $(filter --%,$(BOARD_MKBOOTIMG_ARGS_TMP))),)
-  INSTALLED_BOARDDTB_TARGET := $(firstword $(BOARD_MKBOOTIMG_ARGS_TMP))
-  FILTER_SECOND_BOARD_MKBOOTIMG_ARGS := \
-	$(strip $(filter-out $(INSTALLED_BOARDDTB_TARGET),$(BOARD_MKBOOTIMG_ARGS_TMP)))
-else
-  INSTALLED_BOARDDTB_TARGET := $(BOARD_MKBOOTIMG_ARGS_TMP)
+FILTER_SECOND_BOARD_MKBOOTIMG_ARGS := $(strip $(filter-out --second $(INSTALLED_BOARDDTB_TARGET), $(BOARD_MKBOOTIMG_ARGS)))
 endif
-else
-  FILTER_SECOND_BOARD_MKBOOTIMG_ARGS := $(BOARD_MKBOOTIMG_ARGS)
-endif
-endif
+
 
 # -----------------------------------------------------------------
 # the ramdisk
@@ -530,6 +520,7 @@ endif
 
 
 INTERNAL_BOOTIMAGE_FILES := $(filter-out --%,$(INTERNAL_BOOTIMAGE_ARGS))
+INTERNAL_BOOTIMAGE_FILES += $(INSTALLED_BOARDDTB_TARGET)
 
 BOARD_KERNEL_CMDLINE := $(strip $(BOARD_KERNEL_CMDLINE))
 ifdef BOARD_KERNEL_CMDLINE
@@ -551,12 +542,9 @@ ifdef BOARD_KERNEL_OFFSET
   INTERNAL_BOOTIMAGE_ARGS += --kernel_offset $(BOARD_KERNEL_OFFSET)
 endif
 
-
-ifneq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
 	INSTALLED_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/boot.img
-else
-	INSTALLED_BOOTIMAGE_TARGET_NOT_SIGNED := $(PRODUCT_OUT)/boot.img
-	INSTALLED_BOOTIMAGE_TARGET := $(INSTALLED_BOOTIMAGE_TARGET_NOT_SIGNED).encrypt
+ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	INSTALLED_BOOTIMAGE_TARGET := $(INSTALLED_BOOTIMAGE_TARGET).encrypt
 endif#ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
 
 ifeq ($(TARGET_BOOTIMAGE_USE_EXT2),true)
@@ -567,13 +555,7 @@ $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_FILES) $(BOOT_S
 	$(call pretty,"Target boot image: $@")
 	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) --output $@
 	$(BOOT_SIGNER) /boot $@ $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VERITY_SIGNING_KEY).pk8 $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VERITY_SIGNING_KEY).x509.pem $@
-ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
-	$(hide) mv $@ $(INSTALLED_BOOTIMAGE_TARGET_NOT_SIGNED)
-	$(hide) $(PRODUCT_AML_SECUREBOOT_SIGNIMAGE) \
-		--input $(INSTALLED_BOOTIMAGE_TARGET_NOT_SIGNED) \
-		--output $@
-	$(hide) @echo "$@: installed amlogic encrypted kernel for verified boot"
-endif # ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	$(hide) $(call aml-secureboot-sign-kernel, $@)
 	$(hide) $(call assert-max-image-size,$@,$(BOARD_BOOTIMAGE_PARTITION_SIZE))
 
 
@@ -613,13 +595,7 @@ endif
 $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_FILES)
 	$(call pretty,"Target boot image: $@")
 	$(hide) $(MKBOOTIMG) $(INTERNAL_BOOTIMAGE_ARGS) --output $@
-ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
-	$(hide) mv $@ $(INSTALLED_BOOTIMAGE_TARGET_NOT_SIGNED)
-	$(hide) $(PRODUCT_AML_SECUREBOOT_SIGNIMAGE) \
-		--input $(INSTALLED_BOOTIMAGE_TARGET_NOT_SIGNED) \
-		--output $@
-	$(hide) @echo "$@: installed encrypted kernel"
-endif # ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
+	$(hide) $(call aml-secureboot-sign-kernel, $@)
 	$(hide) $(call assert-max-image-size,$@,$(BOARD_BOOTIMAGE_PARTITION_SIZE))
 
 
@@ -854,11 +830,9 @@ endef
 
 ifdef INSTALLED_RECOVERYIMAGE_TARGET
 
+INSTALLED_RECOVERYIMAGE_TARGET := $(PRODUCT_OUT)/recovery.img
 ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
-	INSTALLED_RECOVERYIMAGE_TARGET_NOT_SINGED := $(PRODUCT_OUT)/recovery.img
-	INSTALLED_RECOVERYIMAGE_TARGET := $(INSTALLED_RECOVERYIMAGE_TARGET_NOT_SINGED).encrypt
-else
-	INSTALLED_RECOVERYIMAGE_TARGET := $(PRODUCT_OUT)/recovery.img
+	INSTALLED_RECOVERYIMAGE_TARGET := $(INSTALLED_RECOVERYIMAGE_TARGET).encrypt
 endif#ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
 
 INTERNAL_RECOVERYIMAGE_FILES := $(filter $(TARGET_RECOVERY_OUT)/%, \
@@ -1048,6 +1022,7 @@ define build-recoveryimage-target
     $(BOOT_SIGNER) /recovery $(1) $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VERITY_SIGNING_KEY).pk8 $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VERITY_SIGNING_KEY).x509.pem $(1))
   $(if $(filter true,$(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_SUPPORTS_VBOOT)), \
     $(VBOOT_SIGNER) $(FUTILITY) $(1).unsigned $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VBOOT_SIGNING_KEY).vbpubk $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_VBOOT_SIGNING_KEY).vbprivk $(1).keyblock $(1))
+  $(hide) $(call aml-secureboot-sign-kernel, $(1))
   $(hide) $(call assert-max-image-size,$(1),$(BOARD_RECOVERYIMAGE_PARTITION_SIZE))
   @echo ----- Made recovery image: $(1) --------
 endef
@@ -1182,6 +1157,7 @@ SYSTEMIMAGE_SOURCE_DIR := $(TARGET_OUT)
 # we can see how big it's going to be, and include that in the system
 # image size check calculation.
 ifneq ($(INSTALLED_RECOVERYIMAGE_TARGET),)
+ifeq ($(TARGET_USE_RECOVERY_FROM_BOOT_P),true)
 intermediates := $(call intermediates-dir-for,PACKAGING,recovery_patch)
 RECOVERY_FROM_BOOT_PATCH := $(intermediates)/recovery_from_boot.p
 $(RECOVERY_FROM_BOOT_PATCH): $(INSTALLED_RECOVERYIMAGE_TARGET) \
@@ -1191,6 +1167,9 @@ $(RECOVERY_FROM_BOOT_PATCH): $(INSTALLED_RECOVERYIMAGE_TARGET) \
 	@echo "Construct recovery from boot"
 	mkdir -p $(dir $@)
 	PATH=$(HOST_OUT_EXECUTABLES):$$PATH $(HOST_OUT_EXECUTABLES)/imgdiff $(INSTALLED_BOOTIMAGE_TARGET) $(INSTALLED_RECOVERYIMAGE_TARGET) $@
+else
+	RECOVERY_FROM_BOOT_PATCH :=
+endif #ifeq ($(TARGET_USE_RECOVERY_FROM_BOOT_P),true)
 endif
 
 
@@ -1564,6 +1543,7 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 		$(INSTALLED_USERDATAIMAGE_TARGET) \
 		$(INSTALLED_CACHEIMAGE_TARGET) \
 		$(INSTALLED_AMLOGIC_BOOTLOADER_TARGET) \
+		$(INSTALLED_BOARDDTB_TARGET)	\
 		$(INSTALLED_VENDORIMAGE_TARGET) \
 		$(INSTALLED_ANDROID_INFO_TXT_TARGET) \
 		$(SELINUX_FC) \
@@ -1710,11 +1690,9 @@ else
 endif#ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
 
 ifeq ($(TARGET_USE_RECOVERY_FROM_BOOT_P),true) #default no using recovry-form-boot.p
-	$(hide) ./build/tools/releasetools/make_recovery_patch $(zip_root) $(zip_root)
-endif #ifeq ($(TARGET_USE_RECOVERY_FROM_BOOT_P),true)
-
 	$(hide) PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH MKBOOTIMG=$(MKBOOTIMG) \
 	    ./build/tools/releasetools/make_recovery_patch $(zip_root) $(zip_root)
+endif #ifeq ($(TARGET_USE_RECOVERY_FROM_BOOT_P),true)
 	@# Zip everything up, preserving symlinks
 	$(hide) (cd $(zip_root) && zip -qry ../$(notdir $@) .)
 	@# Run fs_config on all the system, vendor, boot ramdisk,

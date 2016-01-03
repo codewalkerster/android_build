@@ -783,6 +783,12 @@ def WriteBlockIncrementalOTAPackage(target_zip, source_zip, output_zip):
   system_diff = common.BlockDifference("system", system_tgt, system_src,
                                        version=blockimgdiff_version)
 
+# Add verity items for signing using aml-sign-tools 
+  if OPTIONS.info_dict.get("verity_tool") == "true" : 
+    for vry_item in ("verity.img", "verity_table.bin") : 
+      with open(os.path.join(OPTIONS.input_tmp, "IMAGES", vry_item), "rb") as f: 
+        common.ZipWriteStr(output_zip, "system/" + vry_item, f.read())
+
   if HasVendorPartition(target_zip):
     if not HasVendorPartition(source_zip):
       raise RuntimeError("can't generate incremental that adds /vendor")
