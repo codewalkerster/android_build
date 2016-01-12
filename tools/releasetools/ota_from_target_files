@@ -129,6 +129,7 @@ OPTIONS.secureboot_enable = False
 OPTIONS.dm_verity_enable = False
 OPTIONS.SecurebootAndDmverityWithTool_enable = False
 OPTIONS.update_dtb = False
+OPTIONS.ota_zip_check = True
 
 def MostPopularKey(d, default):
   """Given a dict, return the key corresponding to the largest
@@ -403,6 +404,13 @@ def AppendAssertions(script, info_dict, oem_dict = None):
 def HasRecoveryPatch(target_files_zip):
   try:
     target_files_zip.getinfo("SYSTEM/recovery-from-boot.p")
+    return True
+  except KeyError:
+    return False
+
+def HasTargetImage(target_files_zip, image_path):
+  try:
+    target_files_zip.getinfo(image_path)
     return True
   except KeyError:
     return False
@@ -824,6 +832,9 @@ def WriteFullOTAPackage(input_zip, output_zip):
   AppendAssertions(script, OPTIONS.info_dict, oem_dict)
   device_specific.FullOTA_Assertions()
 
+  if OPTIONS.ota_zip_check:
+    script.AppendExtra("ota_zip_check();")
+
   # Two-step package strategy (in chronological order, which is *not*
   # the order in which the generated script has things):
   #
@@ -1061,9 +1072,19 @@ def WriteBlockIncrementalOTAPackage(target_zip, source_zip, output_zip):
   metadata["pre-build"] = source_fp
   metadata["post-build"] = target_fp
 
-  source_bootloader = common.File("bootloader.img", source_zip.read("BOOTLOADER/bootloader"));
-  target_bootloader = common.File("bootloader.img", target_zip.read("BOOTLOADER/bootloader"));
-  updating_bootloader = (source_bootloader.data != target_bootloader.data);
+  source_bootloader = False; target_bootloader = False; updating_bootloader = False;
+
+  if HasTargetImage(source_zip, "BOOTLOADER/bootloader"):
+    source_bootloader = common.File("bootloader.img", source_zip.read("BOOTLOADER/bootloader"));
+
+  if HasTargetImage(target_zip, "BOOTLOADER/bootloader"):
+    target_bootloader = common.File("bootloader.img", target_zip.read("BOOTLOADER/bootloader"));
+
+  if target_bootloader:
+    if source_bootloader:
+      updating_bootloader = (source_bootloader.data != target_bootloader.data);
+    else:
+      updating_bootloader = True;
 
   source_boot = common.GetBootableImage(
       "/tmp/boot.img", "boot.img", OPTIONS.source_tmp, "BOOT",
@@ -1210,9 +1231,10 @@ else
 
   if updating_bootloader:
     script.Print("install bootloader image...");
-    print("update bootloader image from %d:%s to %d:%s" %
-                      (source_bootloader.size, source_bootloader.sha1,
-                       target_bootloader.size, target_bootloader.sha1))
+    if source_bootloader and target_bootloader:
+      print("update bootloader image from %d:%s to %d:%s" %
+                        (source_bootloader.size, source_bootloader.sha1,
+                         target_bootloader.size, target_bootloader.sha1))
     common.ZipWriteStr(output_zip, "bootloader.img", target_bootloader.data)
     script.WriteRawImage("/bootloader", "bootloader.img")
     print "bootloader image changed; including."
@@ -1463,15 +1485,33 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
   metadata["pre-build"] = source_fp
   metadata["post-build"] = target_fp
 
-  source_bootloader = common.File("bootloader.img", source_zip.read("BOOTLOADER/bootloader"));
-  target_bootloader = common.File("bootloader.img", target_zip.read("BOOTLOADER/bootloader"));
-  updating_bootloader = (source_bootloader.data != target_bootloader.data);
+  source_bootloader = False; target_bootloader = False; updating_bootloader = False;
+
+  if HasTargetImage(source_zip, "BOOTLOADER/bootloader"):
+    source_bootloader = common.File("bootloader.img", source_zip.read("BOOTLOADER/bootloader"));
+
+  if HasTargetImage(target_zip, "BOOTLOADER/bootloader"): 
+    target_bootloader = common.File("bootloader.img", target_zip.read("BOOTLOADER/bootloader"));
+
+  if target_bootloader:
+    if source_bootloader:
+      updating_bootloader = (source_bootloader.data != target_bootloader.data);
+    else:
+      updating_bootloader = True;
 
   updating_dtb = False
-  if OPTIONS.update_dtb:
+  source_dtb = False; target_dtb = False;
+  if HasTargetImage(source_zip, "DTB/dtb"):
     source_dtb = common.File("dtb.img", source_zip.read("DTB/dtb"));
+
+  if HasTargetImage(target_zip, "DTB/dtb"):
     target_dtb = common.File("dtb.img", target_zip.read("DTB/dtb"));
-    updating_dtb = (source_dtb.data != target_dtb.data);
+
+  if target_dtb:
+    if source_dtb:
+      updating_dtb = (source_dtb.data != target_dtb.data);
+    else:
+      updating_dtb = True;
 
   source_boot = common.GetBootableImage(
       "/tmp/boot.img", "boot.img", OPTIONS.source_tmp, "BOOT",
@@ -1608,9 +1648,10 @@ else
 
   if updating_dtb:
     script.Print("install dtb image...");
-    print("update dtb image from %d:%s to %d:%s" %
-                      (source_dtb.size, source_dtb.sha1,
-                       target_dtb.size, target_dtb.sha1))
+    if source_dtb and target_dtb:
+      print("update dtb image from %d:%s to %d:%s" %
+                        (source_dtb.size, source_dtb.sha1,
+                         target_dtb.size, target_dtb.sha1))
     common.ZipWriteStr(output_zip, "dtb.img", target_dtb.data)
     script.WriteDtbImage("dtb.img")
     so_far += target_dtb.size
@@ -1621,9 +1662,10 @@ else
 
   if updating_bootloader:
     script.Print("install bootloader image...");
-    print("update bootloader image from %d:%s to %d:%s" %
-                      (source_bootloader.size, source_bootloader.sha1,
-                       target_bootloader.size, target_bootloader.sha1))
+    if source_bootloader and target_bootloader:
+      print("update bootloader image from %d:%s to %d:%s" %
+                        (source_bootloader.size, source_bootloader.sha1,
+                         target_bootloader.size, target_bootloader.sha1))
     common.ZipWriteStr(output_zip, "bootloader.img", target_bootloader.data)
     script.WriteRawImage("/bootloader", "bootloader.img")
     so_far += target_bootloader.size
