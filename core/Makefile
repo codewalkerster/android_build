@@ -870,6 +870,7 @@ $(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 	$(hide) -cp $(TARGET_DEVICE_DIR)/recovery/init.recovery.*.rc $(TARGET_RECOVERY_ROOT_OUT)/
 	$(hide) cp -f $(TARGET_DEVICE_DIR)/recovery/recovery.fstab $(TARGET_RECOVERY_ROOT_OUT)/etc
 	$(hide) cp -af $(PRODUCT_OUT)/utilities/busybox/bin $(TARGET_RECOVERY_ROOT_OUT)/
+	$(hide) cp -f $(TARGET_DEVICE_DIR)/recovery/mk_e2fs $(TARGET_RECOVERY_ROOT_OUT)/bin/
 	$(hide) cp $(PRODUCT_OUT)/system/bin/sh $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	$(hide) cp $(recovery_systemcontrol) $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	$(hide) cp $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/mesondisplay.cfg)) $(TARGET_RECOVERY_ROOT_OUT)/etc/
