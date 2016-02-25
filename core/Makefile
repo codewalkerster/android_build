@@ -925,6 +925,7 @@ recovery_remote_conf := $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/remote.con
 recovery_systemcontrol := $(PRODUCT_OUT)/utilities/systemcontrol_static
 recovery_mesondisplay_cfg := $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/mesondisplay.cfg))
 recovery_usb_ko := $(TARGET_OUT)/lib/dwc_otg.ko
+recovery_usb3_ko := $(TARGET_OUT)/lib/dwc3.ko
 
 INTERNAL_RECOVERYIMAGE_ARGS := \
 	$(addprefix --second ,$(INSTALLED_2NDBOOTLOADER_TARGET)) \
@@ -1008,6 +1009,7 @@ define build-recoveryimage-target
   $(hide) -cp -f $(recovery_systemcontrol) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
   $(hide) -cp -f $(recovery_mesondisplay_cfg) $(TARGET_RECOVERY_ROOT_OUT)/etc/ || true
   $(hide) -cp -f $(recovery_usb_ko) $(TARGET_RECOVERY_ROOT_OUT)/boot/ || true
+  $(hide) -cp -f $(recovery_usb3_ko) $(TARGET_RECOVERY_ROOT_OUT)/boot/ || true
   $(hide) -cp -f $(recovery_sh) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
   $(if $(filter true,$(TARGET_RECOVERY_DISABLE_ADB_SIDELOAD)),, \
     $(shell sed 's/ro.debuggable=0/ro.debuggable=1/' $(TARGET_RECOVERY_ROOT_OUT)/default.prop \
