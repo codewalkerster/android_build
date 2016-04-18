@@ -790,6 +790,14 @@ INTERNAL_USERIMAGES_DEPS += $(SELINUX_FC)
 # $(1): the path of the output dictionary file
 # $(2): additional "key=value" pairs to append to the dictionary file.
 define generate-userimage-prop-dictionary
+$(hide) echo "update_user_parts=$(TARGET_BUILD_USER_PARTS)" >> $(1)
+$(hide) echo "user_parts_list=$(BOARD_USER_PARTS_NAME)" >> $(1)
+$(hide) $(foreach userPartName, $(BOARD_USER_PARTS_NAME),\
+	$(eval tmp_size=$$($(userPartName)_PART_SIZE)) \
+	$(eval tmp_fs_type=$$($(userPartName)_PART_TYPE)) \
+	echo "$(userPartName)_size=$(tmp_size)" >> $(1); \
+	echo "$(userPartName)_fs_type=$(tmp_fs_type)" >> $(1); \
+	)
 $(if $(INTERNAL_USERIMAGES_EXT_VARIANT),$(hide) echo "fs_type=$(INTERNAL_USERIMAGES_EXT_VARIANT)" >> $(1))
 $(if $(BOARD_SYSTEMIMAGE_PARTITION_SIZE),$(hide) echo "system_size=$(BOARD_SYSTEMIMAGE_PARTITION_SIZE)" >> $(1))
 $(if $(BOARD_SYSTEMIMAGE_FILE_SYSTEM_TYPE),$(hide) echo "system_fs_type=$(BOARD_SYSTEMIMAGE_FILE_SYSTEM_TYPE)" >> $(1))
@@ -1540,6 +1548,7 @@ endif
 # directories are up-to-date.
 $(BUILT_TARGET_FILES_PACKAGE): \
 		$(INSTALLED_BOOTIMAGE_TARGET) \
+		$(INSTALLED_AML_USER_IMAGES) \
 		$(INSTALLED_RADIOIMAGE_TARGET) \
 		$(INSTALLED_RECOVERYIMAGE_TARGET) \
 		$(INSTALLED_SYSTEMIMAGE) \
@@ -1636,6 +1645,12 @@ ifdef BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE
 	$(hide) $(call package_files-copy-root, \
 		$(TARGET_OUT_VENDOR),$(zip_root)/VENDOR)
 endif
+ifeq ($(TARGET_BUILD_USER_PARTS),true)
+	$(hide) $(foreach userPartName, $(BOARD_USER_PARTS_NAME),\
+		$(eval userPartDir := $$($(userPartName)_PART_DIR)) \
+		mkdir -p $(zip_root)/$(shell echo $(userPartName) | tr '[a-z]' '[A-Z]') && $(ACP) -rfd $(userPartDir)/* $(zip_root)/$(shell echo $(userPartName) | tr '[a-z]' '[A-Z]'); \
+		)
+endif#ifeq ($(TARGET_USERIMAGES_USE_EXT4),true)
 	@# Extra contents of the OTA package
 	$(hide) mkdir -p $(zip_root)/OTA/bin
 	$(hide) $(ACP) $(INSTALLED_ANDROID_INFO_TXT_TARGET) $(zip_root)/OTA/
@@ -1702,6 +1717,7 @@ endif #ifeq ($(TARGET_USE_RECOVERY_FROM_BOOT_P),true)
 	@# and recovery ramdisk files in the zip, and save the output
 	$(hide) zipinfo -1 $@ | awk 'BEGIN { FS="SYSTEM/" } /^SYSTEM\// {print "system/" $$2}' | $(HOST_OUT_EXECUTABLES)/fs_config -C -D $(TARGET_OUT) -S $(SELINUX_FC) > $(zip_root)/META/filesystem_config.txt
 	$(hide) zipinfo -1 $@ | awk 'BEGIN { FS="VENDOR/" } /^VENDOR\// {print "vendor/" $$2}' | $(HOST_OUT_EXECUTABLES)/fs_config -C -D $(TARGET_OUT) -S $(SELINUX_FC) > $(zip_root)/META/vendor_filesystem_config.txt
+	$(foreach TMP_NAME,$(BOARD_USER_PARTS_NAME), zipinfo -1 $@ | awk 'BEGIN { FS="$(shell echo $(TMP_NAME) | tr '[a-z]' '[A-Z]')/" } /^$(shell echo $(TMP_NAME) | tr '[a-z]' '[A-Z]')\// {print "$(TMP_NAME)/" $$2}' | $(HOST_OUT_EXECUTABLES)/fs_config -C -S $(SELINUX_FC) > $(zip_root)/META/$(addsuffix _filesystem_config.txt,$(TMP_NAME));)
 	$(hide) zipinfo -1 $@ | awk 'BEGIN { FS="BOOT/RAMDISK/" } /^BOOT\/RAMDISK\// {print $$2}' | $(HOST_OUT_EXECUTABLES)/fs_config -C -D $(TARGET_OUT) -S $(SELINUX_FC) > $(zip_root)/META/boot_filesystem_config.txt
 	$(hide) zipinfo -1 $@ | awk 'BEGIN { FS="RECOVERY/RAMDISK/" } /^RECOVERY\/RAMDISK\// {print $$2}' | $(HOST_OUT_EXECUTABLES)/fs_config -C -D $(TARGET_OUT) -S $(SELINUX_FC) > $(zip_root)/META/recovery_filesystem_config.txt
 	$(hide) (cd $(zip_root) && zip -q ../$(notdir $@) META/*filesystem_config.txt)

@@ -477,7 +477,7 @@ def UnzipTemp(filename, pattern=None):
   else:
     unzip_to_dir(filename, tmp)
 
-  return tmp, zipfile.ZipFile(filename, "r")
+  return tmp, zipfile.ZipFile(filename, "r", allowZip64=True)
 
 
 def GetKeyPasswords(keylist):
@@ -991,6 +991,14 @@ class DeviceSpecificParams(object):
   def FullOTA_InstallBegin(self):
     """Called at the start of full OTA installation."""
     return self._DoCall("FullOTA_InstallBegin")
+
+  def BuildCustomerImage(self):
+    """Called at the start of full Build Customer Image."""
+    return self._DoCall("BuildCustomerImage")
+
+  def BuildCustomerIncrementalImage(self, fun1,fun2, fun3):
+    """Called at the start of full Build Customer Incremental Image."""
+    return self._DoCall("BuildCustomerIncrementalImage", fun1, fun2, fun3)
 
   def FullOTA_InstallEnd(self):
     """Called at the end of full OTA installation; typically this is

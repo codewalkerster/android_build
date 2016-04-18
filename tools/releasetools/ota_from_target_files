@@ -358,7 +358,8 @@ def CopyPartitionFiles(itemset, input_zip, output_zip=None, substitute=None):
 
   for info in input_zip.infolist():
     if info.filename.startswith(partition.upper() + "/"):
-      basefilename = info.filename[7:]
+      prelen = len(partition) + 1
+      basefilename = info.filename[prelen:]
       if IsSymlink(info):
         symlinks.append((input_zip.read(info.filename),
                          "/" + partition + "/" + basefilename))
@@ -971,6 +972,7 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
       script.WriteRawImage("/recovery", "recovery.img")
 
   script.ShowProgress(0.2, 10)
+  device_specific.BuildCustomerImage()
   device_specific.FullOTA_InstallEnd()
 
   if OPTIONS.extra_script is not None:
@@ -1017,7 +1019,8 @@ def LoadPartitionFiles(z, partition):
   prefix = partition.upper() + "/"
   for info in z.infolist():
     if info.filename.startswith(prefix) and not IsSymlink(info):
-      basefilename = info.filename[7:]
+      prelen =len(partition) + 1
+      basefilename = info.filename[prelen:]
       fn = partition + "/" + basefilename
       data = z.read(info.filename)
       out[fn] = common.File(fn, data)
@@ -1837,6 +1840,8 @@ endif;
     script.Unmount("/vendor")
     script.Mount("/vendor")
     vendor_diff.EmitExplicitTargetVerification(script)
+
+  device_specific.BuildCustomerIncrementalImage(FileDifference, ItemSet, CopyPartitionFiles)
   script.AddToZip(target_zip, output_zip, input_path=OPTIONS.updater_binary)
 
   WriteMetadata(metadata, output_zip)
@@ -1969,7 +1974,7 @@ def main(argv):
     else:
       temp_zip_file = tempfile.NamedTemporaryFile()
       output_zip = zipfile.ZipFile(temp_zip_file, "w",
-                                   compression=zipfile.ZIP_DEFLATED)
+                                   compression=zipfile.ZIP_DEFLATED, allowZip64=True)
 
     cache_size = OPTIONS.info_dict.get("cache_size", None)
     if cache_size is None:

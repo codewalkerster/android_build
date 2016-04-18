@@ -470,6 +470,9 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
     copy_prop("oem_size", "partition_size")
     copy_prop("oem_journal_size", "journal_size")
     copy_prop("has_ext4_reserved_blocks", "has_ext4_reserved_blocks")
+  else:
+    copy_prop(mount_point + "_fs_type", "fs_type")
+    copy_prop(mount_point + "_size", "partition_size")
 
   return d
 

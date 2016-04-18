@@ -294,7 +294,7 @@ def AddImagesToTargetFiles(filename):
 
   common.ZipClose(input_zip)
   output_zip = zipfile.ZipFile(filename, "a",
-                               compression=zipfile.ZIP_DEFLATED)
+                               compression=zipfile.ZIP_DEFLATED, allowZip64=True)
 
   def banner(s):
     print "\n\n++++ " + s + " ++++\n\n"
