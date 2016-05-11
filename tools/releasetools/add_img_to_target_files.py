@@ -90,7 +90,7 @@ def AddSystem(output_zip, prefix="IMAGES/", recovery_img=None, boot_img=None, ve
     common.ZipWriteStr(output_zip, prefix + "system.map", f.read())
   if verity_tool :
     for vry_item in ("verity.img", "verity_table.bin") :
-      with open(os.path.join(os.path.dirname(imgname), vry_item), "rb") as f:
+      with open(imgname + "." + vry_item, "rb") as f:
         common.ZipWriteStr(output_zip, prefix + vry_item, f.read())
 
 def BuildSystem(input_dir, info_dict, block_list=None):

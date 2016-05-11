@@ -203,8 +203,10 @@ def MakeVerityEnabledImage(out_file, prop_dict):
   verity_tool = prop_dict.get("verity_tool") == "true"
   if verity_tool:
     # save verity.img
-    verity_image = os.path.join(os.path.dirname(out_file), "verity.img")
-    verity_table = os.path.join(os.path.dirname(out_file), "verity_table.bin")
+    #verity_image = os.path.join(os.path.dirname(out_file), "verity.img")
+    #verity_table = os.path.join(os.path.dirname(out_file), "verity_table.bin")
+    verity_image = out_file +  ".verity.img"
+    verity_table = out_file +  ".verity_table.bin"
     shutil.copyfile(verity_image_path, verity_image)
     shutil.copyfile(verity_metadata_path + ".tab", verity_table)
 
