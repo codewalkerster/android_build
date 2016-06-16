@@ -869,6 +869,7 @@ $(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 	$(hide) cp -f $(recovery_sepolicy) $(TARGET_RECOVERY_ROOT_OUT)/sepolicy
 	$(hide) -cp $(TARGET_DEVICE_DIR)/recovery/init.recovery.*.rc $(TARGET_RECOVERY_ROOT_OUT)/
 	$(hide) cp -f $(TARGET_DEVICE_DIR)/recovery/recovery.fstab $(TARGET_RECOVERY_ROOT_OUT)/etc
+	$(hide) ln -sf recovery.fstab $(TARGET_RECOVERY_ROOT_OUT)/etc/fstab
 	$(hide) cp -af $(PRODUCT_OUT)/utilities/busybox/bin $(TARGET_RECOVERY_ROOT_OUT)/
 	$(hide) cp -f $(TARGET_DEVICE_DIR)/recovery/mk_e2fs $(TARGET_RECOVERY_ROOT_OUT)/bin/
 	$(hide) cp $(PRODUCT_OUT)/system/bin/sh $(TARGET_RECOVERY_ROOT_OUT)/sbin/
