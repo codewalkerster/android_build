@@ -65,7 +65,7 @@ PRODUCT_PACKAGES += \
     service \
     servicemanager \
     surfaceflinger \
-    toolbox
+    busybox
 
 # SELinux packages
 PRODUCT_PACKAGES += \

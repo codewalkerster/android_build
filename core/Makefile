@@ -719,7 +719,9 @@ $(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 	$(hide) cp -f $(recovery_initrc) $(TARGET_RECOVERY_ROOT_OUT)/
 	$(hide) cp -f $(TARGET_PRODUCT_DIR)/recovery/init.rc $(TARGET_RECOVERY_ROOT_OUT)/init.recovery.odroidc.rc
 	$(hide) cp -f $(TARGET_PRODUCT_DIR)/recovery/recovery.fstab $(TARGET_RECOVERY_ROOT_OUT)/etc/
-	$(hide) cp -af $(PRODUCT_OUT)/utilities/toolbox/bin/* $(TARGET_RECOVERY_ROOT_OUT)/sbin/
+	$(hide) ln -sf recovery.fstab $(TARGET_RECOVERY_ROOT_OUT)/etc/fstab
+	$(hide) cp -af $(PRODUCT_OUT)/utilities/busybox/bin $(TARGET_RECOVERY_ROOT_OUT)/
+	$(hide) ln -sf /bin/dd $(TARGET_RECOVERY_ROOT_OUT)/sbin/dd
 	$(hide) cp -f $(PRODUCT_OUT)/system/bin/sh $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	$(hide) cp -f $(PRODUCT_OUT)/system/bin/remotecfg $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	$(hide) cp -f $(PRODUCT_OUT)/system/etc/remote.conf $(TARGET_RECOVERY_ROOT_OUT)/etc/
