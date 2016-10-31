@@ -888,6 +888,15 @@ ifdef TARGET_RECOVERY_FSTAB
 recovery_fstab := $(TARGET_RECOVERY_FSTAB)
 else
 recovery_fstab := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.fstab))
+recovery_fstab := $(if $(wildcard $(recovery_fstab)), $(recovery_fstab),\
+	device/rockchip/common/recovery.fstab)
+endif
+ifdef TARGET_RECOVERY_FSTAB_EMMC
+recovery_fstab_emmc := $(TARGET_RECOVERY_FSTAB_EMMC)
+else
+recovery_fstab_emmc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.emmc.fstab))
+recovery_fstab_emmc := $(if $(wildcard $(recovery_fstab_emmc)), $(recovery_fstab_emmc),\
+	device/rockchip/common/recovery.emmc.fstab)
 endif
 ifdef TARGET_RECOVERY_WIPE
 recovery_wipe := $(TARGET_RECOVERY_WIPE)
@@ -979,6 +988,8 @@ define build-recoveryimage-target
     cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/$(newline))
   $(hide) $(foreach item,$(recovery_fstab), \
     cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.fstab)
+  $(hide) $(foreach item,$(recovery_fstab_emmc), \
+	cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.emmc.fstab)
   $(if $(strip $(recovery_wipe)), \
     $(hide) cp -f $(recovery_wipe) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.wipe)
   $(hide) cp $(RECOVERY_INSTALL_OTA_KEYS) $(TARGET_RECOVERY_ROOT_OUT)/res/keys
@@ -1021,6 +1032,7 @@ $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 		$(INSTALLED_2NDBOOTLOADER_TARGET) \
 		$(recovery_build_prop) $(recovery_resource_deps) \
 		$(recovery_fstab) \
+		$(recovery_fstab_emmc) \
 		$(RECOVERY_INSTALL_OTA_KEYS)
 		$(call pretty,"Target boot image from recovery: $@")
 		$(call build-recoveryimage-target, $@)
