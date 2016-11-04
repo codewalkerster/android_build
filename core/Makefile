@@ -432,21 +432,12 @@ event-log-tags: $(event_log_tags_file)
 
 ALL_DEFAULT_INSTALLED_MODULES += $(event_log_tags_file)
 
-	INSTALLED_AMLOGIC_BOOTLOADER_TARGET := $(PRODUCT_OUT)/u-boot.bin
-ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
-	INSTALLED_AMLOGIC_BOOTLOADER_TARGET := $(INSTALLED_AMLOGIC_BOOTLOADER_TARGET).encrypt
-endif# ifeq ($(PRODUCT_BUILD_SECURE_BOOT_IMAGE_DIRECTLY),true)
 
 # #################################################################
 # Targets for boot/OS images
 # #################################################################
 ifneq ($(strip $(TARGET_NO_BOOTLOADER)),true)
-  amlogic_bootloader := $(strip $(wildcard $(TARGET_DEVICE_DIR)/u-boot.bin))
-  ifneq ($(amlogic_bootloader),)
-	INSTALLED_BOOTLOADER_MODULE := $(INSTALLED_AMLOGIC_BOOTLOADER_TARGET)
-  else
-    INSTALLED_BOOTLOADER_MODULE := $(PRODUCT_OUT)/bootloader
-  endif
+  INSTALLED_BOOTLOADER_MODULE := $(PRODUCT_OUT)/bootloader
   ifeq ($(strip $(TARGET_BOOTLOADER_IS_2ND)),true)
     INSTALLED_2NDBOOTLOADER_TARGET := $(PRODUCT_OUT)/2ndbootloader
   else
@@ -471,20 +462,13 @@ ifeq ($(TARGET_USE_SECURITY_MODE),true)
 	endif
 endif
 
-$(INSTALLED_AMLOGIC_BOOTLOADER_TARGET) : $(TARGET_DEVICE_DIR)/u-boot.bin
-	@echo "make $@: bootloader installed start"
-ifeq ($(TARGET_USE_SECURITY_MODE),true)
-	$(hide) cp $(TARGET_PRODUCT)/u-boot.bin.aml $(PRODUCT_OUT)/u-boot.bin
-else
-	$(hide) cp $(TARGET_DEVICE_DIR)/u-boot.bin $(PRODUCT_OUT)/u-boot.bin
-endif
-	$(hide) $(call aml-secureboot-sign-bootloader, $@)
-	@echo "make $@: bootloader installed end"
 
 # Analysis BOARD_MKBOOTIMG_ARGS
 ifneq ($(strip $(filter --%,$(BOARD_MKBOOTIMG_ARGS))),)
 FILTER_SECOND_BOARD_MKBOOTIMG_ARGS := $(strip $(filter-out --second $(INSTALLED_BOARDDTB_TARGET), $(BOARD_MKBOOTIMG_ARGS)))
 endif
+
+
 
 
 # -----------------------------------------------------------------
@@ -913,7 +897,7 @@ ifeq ($(recovery_resources_private),)
   $(info No private recovery resources for TARGET_DEVICE $(TARGET_DEVICE))
 endif
 
-recovery_busybox := $(PRODUCT_OUT)/utilities/busybox
+recovery_busybox := $(PRODUCT_OUT)/utilities/busybox/bin/busybox
 custom_recovery_busybox := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/busybox))
 ifneq ($(custom_recovery_busybox),)
   recovery_busybox := $(custom_recovery_busybox)
@@ -922,6 +906,8 @@ endif
 ifeq ($(recovery_fstab),)
   $(info No recovery.fstab for TARGET_DEVICE $(TARGET_DEVICE))
 endif
+
+recovery_mk_e2fs := $(TARGET_DEVICE_DIR)/recovery/mk_e2fs
 
 recovery_remote := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/remotecfg))
 recovery_remote_conf := $(strip $(wildcard $(TARGET_DEVICE_DIR)/files/remote.conf))
@@ -1006,7 +992,9 @@ define build-recoveryimage-target
   $(hide) -cp $(recovery_amlogic_initrc) $(TARGET_RECOVERY_ROOT_OUT) || true
   $(hide) -cp -f $(recovery_kl) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.kl || true
   $(if $(filter true,$(TARGET_RECOVERY_NO_BUSYBOX)),, \
-    $(hide) -cp -f $(recovery_busybox) $(TARGET_RECOVERY_ROOT_OUT)/sbin/) || true
+	$(hide) -cp -af $(PRODUCT_OUT)/utilities/busybox/bin $(TARGET_RECOVERY_ROOT_OUT)/bin/ ) || true
+  $(hide) $(foreach item, $(recovery_mk_e2fs), \
+	cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/bin/)
   $(hide) -cp -f $(recovery_remote) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
   $(hide) -cp -f $(recovery_remote_conf) $(TARGET_RECOVERY_ROOT_OUT)/etc/ || true
   $(hide) -cp -f $(recovery_systemcontrol) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
