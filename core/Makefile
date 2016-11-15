@@ -1564,10 +1564,6 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 ifdef INSTALLED_KERNEL_TARGET
 	$(hide) $(ACP) $(INSTALLED_KERNEL_TARGET) $(zip_root)/RECOVERY/kernel
 endif
-ifdef INSTALLED_BOOTLOADER_MODULE
-	$(hide) mkdir -p $(zip_root)/BOOTLOADER
-	$(hide) $(ACP) $(INSTALLED_BOOTLOADER_MODULE) $(zip_root)/BOOTLOADER/bootloader
-endif
 ifdef INSTALLED_2NDBOOTLOADER_TARGET
 	$(hide) $(ACP) \
 		$(INSTALLED_2NDBOOTLOADER_TARGET) $(zip_root)/RECOVERY/second
@@ -1677,9 +1673,7 @@ endif
 ifdef PRODUCT_EXTRA_RECOVERY_KEYS
 	$(hide) echo "extra_recovery_keys=$(PRODUCT_EXTRA_RECOVERY_KEYS)" >> $(zip_root)/META/misc_info.txt
 endif
-ifdef FILTER_SECOND_BOARD_MKBOOTIMG_ARGS
-	$(hide) echo 'mkbootimg_args=$(FILTER_SECOND_BOARD_MKBOOTIMG_ARGS)' >> $(zip_root)/META/misc_info.txt
-endif
+	$(hide) echo 'mkbootimg_args=$(BOARD_MKBOOTIMG_ARGS)' >> $(zip_root)/META/misc_info.txt
 	$(hide) echo "use_set_metadata=1" >> $(zip_root)/META/misc_info.txt
 	$(hide) echo "multistage_support=1" >> $(zip_root)/META/misc_info.txt
 	$(hide) echo "update_rename_support=1" >> $(zip_root)/META/misc_info.txt
