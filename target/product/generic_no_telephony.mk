@@ -22,13 +22,19 @@ PRODUCT_PACKAGES := \
     BluetoothMidiService \
     Camera2 \
     Gallery2 \
-    Music \
     MusicFX \
     OneTimeInitializer \
     Provision \
     SystemUI \
     EasterEgg \
     WallpaperCropper
+
+ifneq ($(strip $(TARGET_BOARD_PLATFORM_PRODUCT)), box)
+PRODUCT_PACKAGES += \
+    Music \
+    MusicFX
+endif
+
 
 PRODUCT_PACKAGES += \
     clatd \
