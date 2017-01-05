@@ -44,7 +44,6 @@ PRODUCT_PACKAGES += \
     libpac \
     PrintRecommendationService \
     ProxyHandler \
-    Settings \
     SharedStorageBackup \
     StorageManager \
     TeleService \
@@ -60,7 +59,8 @@ PRODUCT_PACKAGES += \
 	QuickSearchBox \
     PrintSpooler \
     Telecom \
-    MmsService	
+    MmsService \
+    Settings
 endif
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_base.mk)
