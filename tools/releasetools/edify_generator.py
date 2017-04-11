@@ -351,6 +351,10 @@ class EdifyGenerator(object):
     """clear misc command"""
     #self.script.append('clear_misc_command();')
 
+  def WriteRawLoaderImage(self):
+    """update loader"""
+    self.script.append('write_raw_loader_image() || abort("update loader failed.");')
+
   def SetPermissions(self, fn, uid, gid, mode, selabel, capabilities):
     """Set file ownership and permissions."""
     if not self.info.get("use_set_metadata", False):
