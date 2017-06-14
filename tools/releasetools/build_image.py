@@ -519,8 +519,6 @@ def BuildImage(in_dir, prop_dict, out_file, target_out=None):
     e2fsck_command = ["e2fsck", "-f", "-n", unsparse_image]
     (_, exit_code) = RunCommand(e2fsck_command)
 
-    print unsparse_image, "=>", os.getcwd()
-    shutil.copy2(unsparse_image,os.getcwd())
     os.remove(unsparse_image)
 
   return exit_code == 0
