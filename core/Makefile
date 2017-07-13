@@ -858,7 +858,7 @@ ifneq (,$(INSTALLED_RECOVERYIMAGE_TARGET)$(filter true,$(BOARD_USES_RECOVERY_AS_
 INTERNAL_RECOVERYIMAGE_FILES := $(filter $(TARGET_RECOVERY_OUT)/%, \
     $(ALL_DEFAULT_INSTALLED_MODULES))
 
-recovery_contents := $(TOPDIR)device/rockchip/common/recovery_contents.sh
+recovery_contents := $(TOPDIR)device/hardkernel/common/recovery_contents.sh
 recovery_initrc := $(call include-path-for, recovery)/etc/init.rc
 recovery_sepolicy := $(call intermediates-dir-for,ETC,sepolicy.recovery)/sepolicy.recovery
 recovery_kernel := $(INSTALLED_KERNEL_TARGET) # same as a non-recovery system
@@ -903,27 +903,27 @@ recovery_fstab := $(TARGET_RECOVERY_FSTAB)
 else
 recovery_fstab := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.fstab))
 recovery_fstab := $(if $(wildcard $(recovery_fstab)), $(recovery_fstab),\
-	device/rockchip/$(TARGET_BOARD_PLATFORM)/recovery.fstab)
+	device/hardkernel/$(TARGET_BOARD_PLATFORM)/recovery.fstab)
 recovery_fstab := $(if $(wildcard $(recovery_fstab)), $(recovery_fstab),\
-	device/rockchip/common/recovery.fstab)
+	device/hardkernel/common/recovery.fstab)
 endif
 ifdef TARGET_RECOVERY_FSTAB_EMMC
 recovery_fstab_emmc := $(TARGET_RECOVERY_FSTAB_EMMC)
 else
 recovery_fstab_emmc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.emmc.fstab))
 recovery_fstab_emmc := $(if $(wildcard $(recovery_fstab_emmc)), $(recovery_fstab_emmc),\
-	device/rockchip/$(TARGET_BOARD_PLATFORM)/recovery.emmc.fstab)
+	device/hardkernel/$(TARGET_BOARD_PLATFORM)/recovery.emmc.fstab)
 recovery_fstab_emmc := $(if $(wildcard $(recovery_fstab_emmc)), $(recovery_fstab_emmc),\
-	device/rockchip/common/recovery.emmc.fstab)
+	device/hardkernel/common/recovery.emmc.fstab)
 endif
 ifdef TARGET_RECOVERY_FSTAB_NVME
 recovery_fstab_nvme := $(TARGET_RECOVERY_FSTAB_NVME)
 else
 recovery_fstab_nvme := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.nvme.fstab))
 recovery_fstab_nvme := $(if $(wildcard $(recovery_fstab_nvme)), $(recovery_fstab_nvme),\
-	device/rockchip/$(TARGET_BOARD_PLATFORM)/recovery.nvme.fstab)
+	device/hardkernel/$(TARGET_BOARD_PLATFORM)/recovery.nvme.fstab)
 recovery_fstab_nvme := $(if $(wildcard $(recovery_fstab_nvme)), $(recovery_fstab_nvme),\
-	device/rockchip/common/recovery.nvme.fstab)
+	device/hardkernel/common/recovery.nvme.fstab)
 endif
 ifdef TARGET_RECOVERY_WIPE
 recovery_wipe := $(TARGET_RECOVERY_WIPE)
