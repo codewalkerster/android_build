@@ -661,6 +661,10 @@ def main(argv):
       mount_point = "cache"
     elif image_filename == "vendor.img":
       mount_point = "vendor"
+    elif image_filename == "vendor0.img":
+      mount_point = "vendor"
+    elif image_filename == "vendor1.img":
+      mount_point = "vendor"
     elif image_filename == "oem.img":
       mount_point = "oem"
     else:

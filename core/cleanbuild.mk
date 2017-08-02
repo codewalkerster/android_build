@@ -244,6 +244,8 @@ installclean_files := \
 	$(PRODUCT_OUT)/system \
 	$(PRODUCT_OUT)/system_other \
 	$(PRODUCT_OUT)/vendor \
+	$(PRODUCT_OUT)/vendor0 \
+	$(PRODUCT_OUT)/vendor1 \
 	$(PRODUCT_OUT)/oem \
 	$(PRODUCT_OUT)/dex_bootjars \
 	$(PRODUCT_OUT)/obj/JAVA_LIBRARIES \
