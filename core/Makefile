@@ -599,7 +599,6 @@ INSTALLED_BOOTIMAGE_TARGET := $(INSTALLED_RAMDISK_TARGET)
 endif
 
 INSTALLED_LOADER_TARGET := $(strip $(wildcard $(TARGET_DEVICE_DIR)/ota/loader/RK*Loader*.bin))
-INSTALLED_PARAMETER_TARGET := $(strip $(wildcard $(TARGET_DEVICE_DIR)/ota/parameter/parameter*))
 INSTALLED_UBOOT_TARGET := $(strip $(wildcard u-boot/uboot.img))
 INSTALLED_TRUST_TARGET := $(strip $(wildcard u-boot/trust.img))
 
@@ -1725,7 +1724,6 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 		$(INSTALLED_BOOTIMAGE_TARGET) \
 		$(INSTALLED_RADIOIMAGE_TARGET) \
 		$(INSTALLED_LOADER_TARGET) \
-		$(INSTALLED_PARAMETER_TARGET) \
 		$(INSTALLED_RECOVERYIMAGE_TARGET) \
 		$(INSTALLED_SYSTEMIMAGE) \
 		$(INSTALLED_USERDATAIMAGE_TARGET) \
@@ -1767,13 +1765,6 @@ else
 	$(info cp RK Loader:$(TARGET_DEVICE) to otapackage)
 	$(hide) mkdir -p $(zip_root)/LOADER
 	$(hide) cp $(INSTALLED_LOADER_TARGET) $(zip_root)/RKLoader.bin
-endif
-ifeq ($(INSTALLED_PARAMETER_TARGET),)
-	$(info No parameter for TARGET_DEVICE $(TARGET_DEVICE) to otapackage)
-else
-	$(hide) rm -rf $(zip_root)/PARAMETER
-	$(hide) mkdir -p $(zip_root)/PARAMETER
-	$(hide) $(HOST_OUT_EXECUTABLES)/mkparameter '$(INSTALLED_PARAMETER_TARGET)' $(zip_root)/PARAMETER/parameter
 endif
 endif # INSTALLED_RECOVERYIMAGE_TARGET defined or BOARD_USES_RECOVERY_AS_BOOT is true
 	@# Components of the boot image
