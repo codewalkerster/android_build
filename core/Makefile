@@ -916,15 +916,6 @@ recovery_fstab_emmc := $(if $(wildcard $(recovery_fstab_emmc)), $(recovery_fstab
 recovery_fstab_emmc := $(if $(wildcard $(recovery_fstab_emmc)), $(recovery_fstab_emmc),\
 	device/hardkernel/common/recovery.emmc.fstab)
 endif
-ifdef TARGET_RECOVERY_FSTAB_NVME
-recovery_fstab_nvme := $(TARGET_RECOVERY_FSTAB_NVME)
-else
-recovery_fstab_nvme := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.nvme.fstab))
-recovery_fstab_nvme := $(if $(wildcard $(recovery_fstab_nvme)), $(recovery_fstab_nvme),\
-	device/hardkernel/$(TARGET_BOARD_PLATFORM)/recovery.nvme.fstab)
-recovery_fstab_nvme := $(if $(wildcard $(recovery_fstab_nvme)), $(recovery_fstab_nvme),\
-	device/hardkernel/common/recovery.nvme.fstab)
-endif
 ifdef TARGET_RECOVERY_WIPE
 recovery_wipe := $(TARGET_RECOVERY_WIPE)
 else
@@ -1018,8 +1009,6 @@ define build-recoveryimage-target
     cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.fstab)
   $(hide) $(foreach item,$(recovery_fstab_emmc), \
 	cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.emmc.fstab)
-  $(hide) $(foreach item,$(recovery_fstab_nvme), \
-	cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.nvme.fstab)
   $(if $(strip $(recovery_wipe)), \
     $(hide) cp -f $(recovery_wipe) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.wipe)
   $(hide) cp $(RECOVERY_INSTALL_OTA_KEYS) $(TARGET_RECOVERY_ROOT_OUT)/res/keys
@@ -1063,7 +1052,6 @@ $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 		$(recovery_build_prop) $(recovery_resource_deps) \
 		$(recovery_fstab) \
 		$(recovery_fstab_emmc) \
-		$(recovery_fstab_nvme) \
 		$(RECOVERY_INSTALL_OTA_KEYS)
 		$(call pretty,"Target boot image from recovery: $@")
 		$(call build-recoveryimage-target, $@)
