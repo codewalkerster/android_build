@@ -598,8 +598,6 @@ else	# TARGET_NO_KERNEL
 INSTALLED_BOOTIMAGE_TARGET := $(INSTALLED_RAMDISK_TARGET)
 endif
 
-INSTALLED_LOADER_TARGET := $(strip $(wildcard $(TARGET_DEVICE_DIR)/ota/loader/RK*Loader*.bin))
-
 # -----------------------------------------------------------------
 # NOTICE files
 #
@@ -1721,7 +1719,6 @@ endif
 $(BUILT_TARGET_FILES_PACKAGE): \
 		$(INSTALLED_BOOTIMAGE_TARGET) \
 		$(INSTALLED_RADIOIMAGE_TARGET) \
-		$(INSTALLED_LOADER_TARGET) \
 		$(INSTALLED_RECOVERYIMAGE_TARGET) \
 		$(INSTALLED_SYSTEMIMAGE) \
 		$(INSTALLED_USERDATAIMAGE_TARGET) \
@@ -1756,13 +1753,6 @@ ifdef BOARD_KERNEL_BASE
 endif
 ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/$(PRIVATE_RECOVERY_OUT)/pagesize
-endif
-ifeq ($(INSTALLED_LOADER_TARGET),)
-	$(info No RK Loader for TARGET_DEVICE $(TARGET_DEVICE) to otapackage)
-else
-	$(info cp RK Loader:$(TARGET_DEVICE) to otapackage)
-	$(hide) mkdir -p $(zip_root)/LOADER
-	$(hide) cp $(INSTALLED_LOADER_TARGET) $(zip_root)/RKLoader.bin
 endif
 endif # INSTALLED_RECOVERYIMAGE_TARGET defined or BOARD_USES_RECOVERY_AS_BOOT is true
 	@# Components of the boot image
