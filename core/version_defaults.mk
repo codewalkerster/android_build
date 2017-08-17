@@ -173,8 +173,5 @@ ifeq "" "$(BUILD_NUMBER)"
   # If no BUILD_NUMBER is set, create a useful "I am an engineering build
   # from this date/time" value.  Make it start with a non-digit so that
   # anyone trying to parse it as an integer will probably get "0".
-  BUILD_NUMBER := eng.$(USER).$(shell date +%Y%m%d.%H%M%S)
-ifeq ($(TARGET_BUILD_VARIANT),user)
   BUILD_NUMBER := user.$(USER).$(shell date +%Y%m%d.%H%M%S)
-endif
 endif
