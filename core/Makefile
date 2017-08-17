@@ -903,16 +903,12 @@ recovery_fstab := $(TARGET_RECOVERY_FSTAB)
 else
 recovery_fstab := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.fstab))
 recovery_fstab := $(if $(wildcard $(recovery_fstab)), $(recovery_fstab),\
-	device/hardkernel/$(TARGET_BOARD_PLATFORM)/recovery.fstab)
-recovery_fstab := $(if $(wildcard $(recovery_fstab)), $(recovery_fstab),\
 	device/hardkernel/common/recovery.fstab)
 endif
 ifdef TARGET_RECOVERY_FSTAB_EMMC
 recovery_fstab_emmc := $(TARGET_RECOVERY_FSTAB_EMMC)
 else
 recovery_fstab_emmc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.emmc.fstab))
-recovery_fstab_emmc := $(if $(wildcard $(recovery_fstab_emmc)), $(recovery_fstab_emmc),\
-	device/hardkernel/$(TARGET_BOARD_PLATFORM)/recovery.emmc.fstab)
 recovery_fstab_emmc := $(if $(wildcard $(recovery_fstab_emmc)), $(recovery_fstab_emmc),\
 	device/hardkernel/common/recovery.emmc.fstab)
 endif
