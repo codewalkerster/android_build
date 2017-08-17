@@ -334,10 +334,6 @@ class EdifyGenerator(object):
         raise ValueError(
             "don't know how to write \"%s\" partitions" % p.fs_type)
 
-  def ClearMiscCommand(self):
-    """clear misc command"""
-    #self.script.append('clear_misc_command();')
-
   def WriteRawLoaderImage(self):
     """update loader"""
     self.script.append('write_raw_loader_image() || abort("update loader failed.");')

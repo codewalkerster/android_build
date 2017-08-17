@@ -445,17 +445,12 @@ def _BuildBootableImage(sourcedir, fs_config_file, info_dict=None,
   if has_ramdisk:
     ramdisk_img = make_ramdisk()
 
-  cmd = ["truncate", "-s", "%4", ramdisk_img.name]
-  p3 = Run(cmd)
-  p3.communicate()
-  assert p3.returncode == 0, "truncate ramdisk failed"
-
   # use MKBOOTIMG from environ, or "mkbootimg" if empty or not set
   mkbootimg = os.getenv('MKBOOTIMG') or "mkbootimg"
 
   cmd = [mkbootimg, "--kernel", os.path.join(sourcedir, "kernel")]
-  fn = os.path.join(sourcedir, "resource.img")
-  #fn = os.path.join(sourcedir, "second")
+
+  fn = os.path.join(sourcedir, "second")
   if os.access(fn, os.F_OK):
     cmd.append("--second")
     cmd.append(fn)
