@@ -32,7 +32,7 @@ CLANG_CONFIG_EXTRA_CFLAGS += \
   -D__compiler_offsetof=__builtin_offsetof
 
 # Help catch common 32/64-bit errors.
-#CLANG_CONFIG_EXTRA_CFLAGS += \
+CLANG_CONFIG_EXTRA_CFLAGS += \
   -Werror=int-conversion
 
 # Disable overly aggressive warning for macros defined with a leading underscore

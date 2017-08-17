@@ -1566,6 +1566,7 @@ ifeq ($(TARGET_BUILD_PDK),true)
 build_ota_package := false
 endif
 
+ifeq ($(build_ota_package),true)
 OTATOOLS :=  $(HOST_OUT_EXECUTABLES)/minigzip \
   $(HOST_OUT_EXECUTABLES)/aapt \
   $(HOST_OUT_EXECUTABLES)/mkbootfs \
@@ -1647,6 +1648,7 @@ $(BUILT_OTATOOLS_PACKAGE): $(OTATOOLS) | $(ACP)
 .PHONY: otatools-package
 otatools-package: $(BUILT_OTATOOLS_PACKAGE)
 
+endif # build_ota_package
 
 # -----------------------------------------------------------------
 # A zip of the directories that map to the target filesystem.

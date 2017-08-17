@@ -653,7 +653,7 @@ endif
 COMMON_GLOBAL_CPPFLAGS:= -Wsign-promo
 COMMON_RELEASE_CPPFLAGS:=
 
-#GLOBAL_CFLAGS_NO_OVERRIDE := \
+GLOBAL_CFLAGS_NO_OVERRIDE := \
     -Werror=int-to-pointer-cast \
     -Werror=pointer-to-int-cast \
 

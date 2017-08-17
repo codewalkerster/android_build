@@ -90,8 +90,8 @@ TARGET_GLOBAL_CFLAGS += \
 # Help catch common 32/64-bit errors.
 TARGET_GLOBAL_CFLAGS += \
     -Werror=pointer-to-int-cast \
-#    -Werror=int-to-pointer-cast \
-#    -Werror=implicit-function-declaration \
+    -Werror=int-to-pointer-cast \
+    -Werror=implicit-function-declaration \
 
 TARGET_GLOBAL_CFLAGS += -fno-strict-volatile-bitfields
 
