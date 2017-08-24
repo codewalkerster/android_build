@@ -848,6 +848,14 @@ ifneq (,$(INSTALLED_RECOVERYIMAGE_TARGET)$(filter true,$(BOARD_USES_RECOVERY_AS_
 INTERNAL_RECOVERYIMAGE_FILES := $(filter $(TARGET_RECOVERY_OUT)/%, \
     $(ALL_DEFAULT_INSTALLED_MODULES))
 
+recovery_odroid_initrc := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/init.recovery.*rc))
+
+recovery_sh := $(TARGET_OUT)/bin/sh
+custom_recovery_sh := vendor/rockchip/common/bin/$(TARGET_ARCH)/sh
+ifneq ($(custom_recovery_sh),)
+  recovery_sh := $(custom_recovery_sh)
+endif
+
 recovery_initrc := $(call include-path-for, recovery)/etc/init.rc
 recovery_sepolicy := $(call intermediates-dir-for,ETC,sepolicy.recovery)/sepolicy.recovery
 recovery_kernel := $(INSTALLED_KERNEL_TARGET) # same as a non-recovery system
@@ -887,6 +895,8 @@ TARGET_PRIVATE_RES_DIRS := $(wildcard $(TARGET_DEVICE_DIR)/recovery/res)
 endif
 recovery_resource_deps := $(shell find $(recovery_resources_common) \
   $(TARGET_PRIVATE_RES_DIRS) -type f)
+
+TARGET_RECOVERY_FSTAB := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/recovery.fstab))
 ifdef TARGET_RECOVERY_FSTAB
 recovery_fstab := $(TARGET_RECOVERY_FSTAB)
 else
@@ -919,6 +929,12 @@ endif
 
 ifeq ($(TARGET_PRIVATE_RES_DIRS),)
   $(info No private recovery resources for TARGET_DEVICE $(TARGET_DEVICE))
+endif
+
+recovery_busybox := $(PRODUCT_OUT)/utilities
+custom_recovery_busybox := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/busybox)) #vendor/rockchip/common/$(TARGET_ARCH)/busybox
+ifneq ($(custom_recovery_busybox),)
+  recovery_busybox := $(custom_recovery_busybox)
 endif
 
 ifeq ($(recovery_fstab),)
@@ -982,11 +998,14 @@ define build-recoveryimage-target
     cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/$(newline))
   $(hide) $(foreach item,$(recovery_fstab), \
     cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.fstab)
+  $(hide) ln -sf recovery.fstab $(TARGET_RECOVERY_ROOT_OUT)/etc/fstab
   $(if $(strip $(recovery_wipe)), \
     $(hide) cp -f $(recovery_wipe) $(TARGET_RECOVERY_ROOT_OUT)/etc/recovery.wipe)
   $(hide) cp $(RECOVERY_INSTALL_OTA_KEYS) $(TARGET_RECOVERY_ROOT_OUT)/res/keys
   $(hide) cat $(INSTALLED_DEFAULT_PROP_TARGET) $(recovery_build_prop) \
           > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
+  $(hide) -cp $(recovery_odroid_initrc) $(TARGET_RECOVERY_ROOT_OUT) || true
+  $(hide) -cp -f $(recovery_sh) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
   $(BOARD_RECOVERY_IMAGE_PREPARE)
   $(if $(filter true,$(BOARD_BUILD_SYSTEM_ROOT_IMAGE)), \
     $(hide) mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/system_root; \
@@ -1023,6 +1042,7 @@ $(INSTALLED_BOOTIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 		$(recovery_initrc) $(recovery_sepolicy) $(recovery_kernel) \
 		$(INSTALLED_2NDBOOTLOADER_TARGET) \
 		$(recovery_build_prop) $(recovery_resource_deps) \
+		$(recovery_busybox) \
 		$(recovery_fstab) \
 		$(RECOVERY_INSTALL_OTA_KEYS)
 		$(call pretty,"Target boot image from recovery: $@")
