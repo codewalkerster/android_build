@@ -1305,6 +1305,8 @@ else
 RECOVERY_RESOURCE_ZIP :=
 endif
 
+recovery_mk_e2fs := $(TARGET_DEVICE_DIR)/recovery/mk_e2fs
+
 INTERNAL_RECOVERYIMAGE_ARGS := \
 	$(addprefix --second ,$(INSTALLED_2NDBOOTLOADER_TARGET)) \
 	--kernel $(recovery_kernel) \
@@ -1380,6 +1382,8 @@ define build-recoveryimage-target
             >> $(TARGET_RECOVERY_ROOT_OUT)/prop.default)
   $(hide) cat $(recovery_build_props) \
           >> $(TARGET_RECOVERY_ROOT_OUT)/prop.default
+  $(hide) $(foreach item, $(recovery_mk_e2fs), \
+    cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/sbin/)
   $(hide) ln -sf prop.default $(TARGET_RECOVERY_ROOT_OUT)/default.prop
   $(BOARD_RECOVERY_IMAGE_PREPARE)
   $(if $(filter true,$(BOARD_BUILD_SYSTEM_ROOT_IMAGE)), \
