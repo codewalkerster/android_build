@@ -65,4 +65,3 @@ def copy_patch_sh(argv):
   shutil.copyfile(sh_src,sh_dst)
 if __name__ == '__main__':
   main(sys.argv[1:])
-  copy_patch_sh(sys.argv[1:])
