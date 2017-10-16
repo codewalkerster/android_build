@@ -23,11 +23,7 @@
 # for 32-bit only.
 
 # Copy the 64-bit primary, 32-bit secondary zygote startup script
-ifeq ($(strip $(TARGET_BOARD_PLATFORM_PRODUCT)), box)
-  PRODUCT_COPY_FILES += system/core/rootdir/init.zygote64_32.box.rc:root/init.zygote64_32.rc
-else
-  PRODUCT_COPY_FILES += system/core/rootdir/init.zygote64_32.rc:root/init.zygote64_32.rc
-endif
+PRODUCT_COPY_FILES += system/core/rootdir/init.zygote64_32.rc:root/init.zygote64_32.rc
 
 # Set the zygote property to select the 64-bit primary, 32-bit secondary script
 # This line must be parsed before the one in core_minimal.mk
