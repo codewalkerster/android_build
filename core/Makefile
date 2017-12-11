@@ -1008,9 +1008,7 @@ define build-recoveryimage-target
   $(hide) cat $(INSTALLED_DEFAULT_PROP_TARGET) $(recovery_build_prop) \
           > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
   $(hide) -cp $(recovery_odroid_initrc) $(TARGET_RECOVERY_ROOT_OUT) || true
-  $(if $(filter true,$(TARGET_RECOVERY_NO_BUSYBOX)),, \
-  $(hide) -cp -af $(PRODUCT_OUT)/utilities/busybox/bin/ $(TARGET_RECOVERY_ROOT_OUT)/ ) || true
-    $(hide) mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/bin
+  $(hide) -cp -af $(PRODUCT_OUT)/utilities/busybox/bin/ $(TARGET_RECOVERY_ROOT_OUT)/
   $(hide) $(foreach item, $(recovery_mk_e2fs), \
     cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/bin/)
   $(hide) -cp -f $(recovery_sh) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
