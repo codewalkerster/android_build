@@ -932,7 +932,7 @@ ifeq ($(TARGET_PRIVATE_RES_DIRS),)
 endif
 
 recovery_busybox := $(PRODUCT_OUT)/utilities/busybox/bin/busybox
-custom_recovery_busybox := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/busybox)) #vendor/rockchip/common/$(TARGET_ARCH)/busybox
+custom_recovery_busybox := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/busybox))
 ifneq ($(custom_recovery_busybox),)
   recovery_busybox := $(custom_recovery_busybox)
 endif
@@ -1061,9 +1061,9 @@ $(INSTALLED_RECOVERYIMAGE_TARGET): $(MKBOOTFS) $(MKBOOTIMG) $(MINIGZIP) \
 		$(recovery_initrc) $(recovery_sepolicy) $(recovery_kernel) \
 		$(INSTALLED_2NDBOOTLOADER_TARGET) \
 		$(recovery_build_prop) $(recovery_resource_deps) \
-		$(recovery_busybox) \
 		$(recovery_fstab) \
-		$(RECOVERY_INSTALL_OTA_KEYS)
+		$(RECOVERY_INSTALL_OTA_KEYS) \
+		$(recovery_busybox)
 		$(call build-recoveryimage-target, $@)
 
 ifdef RECOVERY_RESOURCE_ZIP
