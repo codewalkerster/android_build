@@ -931,7 +931,7 @@ ifeq ($(TARGET_PRIVATE_RES_DIRS),)
   $(info No private recovery resources for TARGET_DEVICE $(TARGET_DEVICE))
 endif
 
-recovery_busybox := $(PRODUCT_OUT)/utilities/busybox/bin/busybox
+recovery_busybox := $(TARGET_RECOVERY_ROOT_OUT)/bin/busybox
 custom_recovery_busybox := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/busybox))
 ifneq ($(custom_recovery_busybox),)
   recovery_busybox := $(custom_recovery_busybox)
@@ -1008,7 +1008,6 @@ define build-recoveryimage-target
   $(hide) cat $(INSTALLED_DEFAULT_PROP_TARGET) $(recovery_build_prop) \
           > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
   $(hide) -cp $(recovery_odroid_initrc) $(TARGET_RECOVERY_ROOT_OUT) || true
-  $(hide) -cp -af $(PRODUCT_OUT)/utilities/busybox/bin/ $(TARGET_RECOVERY_ROOT_OUT)/
   $(hide) $(foreach item, $(recovery_mk_e2fs), \
     cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/bin/)
   $(hide) -cp -f $(recovery_sh) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
