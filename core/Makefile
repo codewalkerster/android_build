@@ -884,7 +884,7 @@ endif
 # can be overridden for a particular device by putting a font.png in
 # its private recovery resources.
 
-ifneq (,$(filter xxxhdpi 560dpi xxhdpi 400dpi xhdpi,$(recovery_density)))
+ifneq (,$(filter xxxhdpi 560dpi xxhdpi 400dpi xhdpi tvdpi,$(recovery_density)))
 recovery_font := $(call include-path-for, recovery)/fonts/18x32.png
 else
 recovery_font := $(call include-path-for, recovery)/fonts/12x22.png
@@ -1531,19 +1531,47 @@ vendorimage_intermediates := \
     $(call intermediates-dir-for,PACKAGING,vendor)
 BUILT_VENDORIMAGE_TARGET := $(PRODUCT_OUT)/vendor.img
 
-define build-vendorimage-target
-  $(call pretty,"Target vendor fs image: $(INSTALLED_VENDORIMAGE_TARGET)")
-  @mkdir -p $(TARGET_OUT_VENDOR)
-  @mkdir -p $(vendorimage_intermediates) && rm -rf $(vendorimage_intermediates)/vendor_image_info.txt
-  $(call generate-userimage-prop-dictionary, $(vendorimage_intermediates)/vendor_image_info.txt, skip_fsck=true)
-  $(hide) PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH \
-      ./build/tools/releasetools/build_image.py \
-      $(TARGET_OUT_VENDOR) $(vendorimage_intermediates)/vendor_image_info.txt $(INSTALLED_VENDORIMAGE_TARGET) $(TARGET_OUT)
-  $(hide) $(call assert-max-image-size,$(INSTALLED_VENDORIMAGE_TARGET),$(BOARD_VENDORIMAGE_PARTITION_SIZE))
-endef
+ifeq ($(strip $(TARGET_BOARD_PLATFORM)),rk3288)
+    define build-vendorimage-target
+      $(call pretty,"Target vendor0 fs image: $(INSTALLED_VENDORIMAGE_TARGET)0.img")
+      @mkdir -p $(TARGET_OUT_VENDOR)0
+      $(hide) cp -Rf $(TARGET_OUT_VENDOR)/* $(TARGET_OUT_VENDOR)0/
+      @mkdir -p $(vendorimage_intermediates) && rm -rf $(vendorimage_intermediates)/vendor_image_info.txt
+      $(call generate-userimage-prop-dictionary, $(vendorimage_intermediates)/vendor_image_info.txt, skip_fsck=true)
+      PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH \
+          ./build/tools/releasetools/build_image.py \
+          $(TARGET_OUT_VENDOR)0 $(vendorimage_intermediates)/vendor_image_info.txt $(INSTALLED_VENDORIMAGE_TARGET)0.img $(TARGET_OUT)
+      $(hide) $(call assert-max-image-size,$(INSTALLED_VENDORIMAGE_TARGET),$(BOARD_VENDORIMAGE_PARTITION_SIZE))
+
+      $(call pretty,"Target vendor1 fs image: $(INSTALLED_VENDORIMAGE_TARGET)1.img")
+      @mkdir -p $(TARGET_OUT_VENDOR)1
+      $(hide) cp -Rf $(TARGET_OUT_VENDOR)/* $(TARGET_OUT_VENDOR)1/
+      @mkdir -p $(vendorimage_intermediates) && rm -rf $(vendorimage_intermediates)/vendor_image_info.txt
+      $(call generate-userimage-prop-dictionary, $(vendorimage_intermediates)/vendor_image_info.txt, skip_fsck=true)
+      PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH \
+          ./build/tools/releasetools/build_image.py \
+          $(TARGET_OUT_VENDOR)1 $(vendorimage_intermediates)/vendor_image_info.txt $(INSTALLED_VENDORIMAGE_TARGET)1.img $(TARGET_OUT)
+      $(hide) $(call assert-max-image-size,$(INSTALLED_VENDORIMAGE_TARGET),$(BOARD_VENDORIMAGE_PARTITION_SIZE))
+    endef
+else
+    define build-vendorimage-target
+      $(call pretty,"Target vendor fs image: $(INSTALLED_VENDORIMAGE_TARGET)")
+      @mkdir -p $(TARGET_OUT_VENDOR)
+      @mkdir -p $(vendorimage_intermediates) && rm -rf $(vendorimage_intermediates)/vendor_image_info.txt
+      $(call generate-userimage-prop-dictionary, $(vendorimage_intermediates)/vendor_image_info.txt, skip_fsck=true)
+      $(hide) PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH \
+          ./build/tools/releasetools/build_image.py \
+          $(TARGET_OUT_VENDOR) $(vendorimage_intermediates)/vendor_image_info.txt $(INSTALLED_VENDORIMAGE_TARGET) $(TARGET_OUT)
+      $(hide) $(call assert-max-image-size,$(INSTALLED_VENDORIMAGE_TARGET),$(BOARD_VENDORIMAGE_PARTITION_SIZE))
+    endef
+endif
 
 # We just build this directly to the install location.
-INSTALLED_VENDORIMAGE_TARGET := $(BUILT_VENDORIMAGE_TARGET)
+ifeq ($(strip $(TARGET_BOARD_PLATFORM)),rk3288)
+ INSTALLED_VENDORIMAGE_TARGET := $(PRODUCT_OUT)/vendor
+else
+ INSTALLED_VENDORIMAGE_TARGET := $(BUILT_VENDORIMAGE_TARGET)
+endif
 $(INSTALLED_VENDORIMAGE_TARGET): $(INTERNAL_USERIMAGES_DEPS) $(INTERNAL_VENDORIMAGE_FILES) $(INSTALLED_FILES_FILE_VENDOR)
 	$(build-vendorimage-target)
 
@@ -1969,7 +1997,7 @@ INTERNAL_OTA_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 
 $(INTERNAL_OTA_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
 
-$(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE)
+$(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(HOST_OUT_EXECUTABLES)/mkparameter $(HOST_OUT_EXECUTABLES)/drmsigntool
 	@echo "Package OTA: $@"
 	$(hide) PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH MKBOOTIMG=$(MKBOOTIMG) \
 	   ./build/tools/releasetools/ota_from_target_files -v \

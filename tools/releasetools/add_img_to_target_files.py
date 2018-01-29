@@ -210,6 +210,11 @@ def CreateImage(input_dir, info_dict, what, block_list=None):
                                 image_props, img)
   assert succ, "build " + what + ".img image failed"
 
+  if what == "system":
+    img_out = os.path.join(os.environ["OUT"],"system.img")
+    print img, "=>", img_out
+    shutil.copyfile(img,img_out)
+
   return img
 
 

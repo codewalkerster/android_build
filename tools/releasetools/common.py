@@ -493,6 +493,11 @@ def _BuildBootableImage(sourcedir, fs_config_file, info_dict=None,
   assert p.returncode == 0, "mkbootimg of %s image failed" % (
       os.path.basename(sourcedir),)
 
+  sign_cmd = ["drmsigntool", img.name, "build/target/product/security/privateKey.bin"]
+  p4 = Run(sign_cmd)
+  p4.communicate()
+  assert p4.returncode == 0, "mkbootimg of %s image failed" % (os.path.basename(sourcedir),)
+
   if (info_dict.get("boot_signer", None) == "true" and
       info_dict.get("verity_key", None)):
     # Hard-code the path as "/boot" for two-step special recovery image (which
