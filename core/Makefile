@@ -941,6 +941,9 @@ ifeq ($(recovery_fstab),)
   $(info No recovery.fstab for TARGET_DEVICE $(TARGET_DEVICE))
 endif
 
+recovery_mk_e2fs := $(TARGET_DEVICE_DIR)/recovery/mk_e2fs
+
+
 INTERNAL_RECOVERYIMAGE_ARGS := \
 	$(addprefix --second ,$(INSTALLED_2NDBOOTLOADER_TARGET)) \
 	--kernel $(recovery_kernel) \
@@ -1005,6 +1008,8 @@ define build-recoveryimage-target
   $(hide) cat $(INSTALLED_DEFAULT_PROP_TARGET) $(recovery_build_prop) \
           > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
   $(hide) -cp $(recovery_odroid_initrc) $(TARGET_RECOVERY_ROOT_OUT) || true
+  $(hide) $(foreach item, $(recovery_mk_e2fs), \
+    cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/bin/)
   $(hide) -cp -f $(recovery_sh) $(TARGET_RECOVERY_ROOT_OUT)/sbin/ || true
   $(BOARD_RECOVERY_IMAGE_PREPARE)
   $(if $(filter true,$(BOARD_BUILD_SYSTEM_ROOT_IMAGE)), \
