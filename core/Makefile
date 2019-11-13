@@ -328,6 +328,12 @@ BUILD_KEYS := test-keys
 else
 BUILD_KEYS := dev-keys
 endif
+
+# For user fingerprint
+ifeq ($(TARGET_BUILD_VARIANT),user)
+BUILD_KEYS := release-keys
+endif
+
 BUILD_VERSION_TAGS += $(BUILD_KEYS)
 BUILD_VERSION_TAGS := $(subst $(space),$(comma),$(sort $(BUILD_VERSION_TAGS)))
 
@@ -337,10 +343,14 @@ $(intermediate_system_build_prop): PRIVATE_BUILD_DESC := $(build_desc)
 
 # The string used to uniquely identify the combined build and product; used by the OTA server.
 ifeq (,$(strip $(BUILD_FINGERPRINT)))
-  ifeq ($(strip $(HAS_BUILD_NUMBER)),false)
-    BF_BUILD_NUMBER := $(BUILD_USERNAME)$$($(DATE_FROM_FILE) +%m%d%H%M)
+  ifdef ROCKCHIP_BUILD_NUMBER
+    BF_BUILD_NUMBER := $(ROCKCHIP_BUILD_NUMBER)
   else
-    BF_BUILD_NUMBER := $(file <$(BUILD_NUMBER_FILE))
+    ifeq ($(strip $(HAS_BUILD_NUMBER)),false)
+      BF_BUILD_NUMBER := $(BUILD_USERNAME)$$($(DATE_FROM_FILE) +%m%d%H%M)
+    else
+      BF_BUILD_NUMBER := $(file <$(BUILD_NUMBER_FILE))
+    endif
   endif
   BUILD_FINGERPRINT := $(PRODUCT_BRAND)/$(TARGET_PRODUCT)/$(TARGET_DEVICE):$(PLATFORM_VERSION)/$(BUILD_ID)/$(BF_BUILD_NUMBER):$(TARGET_BUILD_VARIANT)/$(BUILD_VERSION_TAGS)
 endif

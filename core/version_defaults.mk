@@ -284,6 +284,9 @@ DATE := date -d @$(BUILD_DATETIME)
 $(KATI_obsolete_var BUILD_DATETIME,Use BUILD_DATETIME_FROM_FILE)
 
 HAS_BUILD_NUMBER := true
+ifdef ROCKCHIP_BUILD_NUMBER
+  BUILD_NUMBER := $(ROCKCHIP_BUILD_NUMBER)
+endif
 ifndef BUILD_NUMBER
   # BUILD_NUMBER should be set to the source control value that
   # represents the current state of the source code.  E.g., a
