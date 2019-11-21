@@ -55,7 +55,11 @@ ifeq ($(strip $(HAS_BUILD_NUMBER)),false)
   # it will change every time.  Pick a stable value.
   FILE_NAME_TAG := eng.$(BUILD_USERNAME)
 else
-  FILE_NAME_TAG := $(file <$(BUILD_NUMBER_FILE))
+  ifdef ROCKCHIP_BUILD_NUMBER
+    FILE_NAME_TAG := $(ROCKCHIP_BUILD_NUMBER)
+  else
+    FILE_NAME_TAG := $(file <$(BUILD_NUMBER_FILE))
+  endif
 endif
 .KATI_READONLY := FILE_NAME_TAG
 
