@@ -330,7 +330,9 @@ BUILD_KEYS := dev-keys
 endif
 
 # For user fingerprint
-ifeq ($(TARGET_BUILD_VARIANT),user)
+ifeq ($(TARGET_BUILD_VARIANT),eng)
+BUILD_KEYS := test-keys
+else
 BUILD_KEYS := release-keys
 endif
 
