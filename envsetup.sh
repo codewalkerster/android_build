@@ -427,7 +427,7 @@ function chooseproduct()
     if [ "x$TARGET_PRODUCT" != x ] ; then
         default_value=$TARGET_PRODUCT
     else
-        default_value=aosp_arm
+        default_value=kvim3-userdebug
     fi
 
     export TARGET_BUILD_APPS=
@@ -545,12 +545,12 @@ function add_lunch_combo()
 }
 
 # add the default one here
-add_lunch_combo aosp_arm-eng
-add_lunch_combo aosp_arm64-eng
-add_lunch_combo aosp_mips-eng
-add_lunch_combo aosp_mips64-eng
-add_lunch_combo aosp_x86-eng
-add_lunch_combo aosp_x86_64-eng
+#add_lunch_combo aosp_arm-eng
+#add_lunch_combo aosp_arm64-eng
+#add_lunch_combo aosp_mips-eng
+#add_lunch_combo aosp_mips64-eng
+#add_lunch_combo aosp_x86-eng
+#add_lunch_combo aosp_x86_64-eng
 
 function print_lunch_menu()
 {
@@ -579,7 +579,7 @@ function lunch()
         answer=$1
     else
         print_lunch_menu
-        echo -n "Which would you like? [aosp_arm-eng] "
+        echo -n "Which would you like? [kvim3-userdebug] "
         read answer
     fi
 
@@ -587,7 +587,7 @@ function lunch()
 
     if [ -z "$answer" ]
     then
-        selection=aosp_arm-eng
+        selection=kvim3-userdebug
     elif (echo -n $answer | grep -q -e "^[0-9][0-9]*$")
     then
         if [ $answer -le ${#LUNCH_MENU_CHOICES[@]} ]
