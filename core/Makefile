@@ -1390,6 +1390,15 @@ endif # BUILDING_VENDOR_BOOT_IMAGE
 # This needs to be before the systemimage rules, because it adds to
 # ALL_DEFAULT_INSTALLED_MODULES, which those use to pick which files
 # go into the systemimage.
+INSTALLED_LOADER_TARGET := $(strip $(wildcard $(TARGET_DEVICE_DIR)/ota/loader/RK*Loader*.bin))
+
+INSTALLED_UBOOT_TARGET := $(strip $(wildcard u-boot/uboot.img))
+HAVE_TRUST_WITH_TA := $(shell test -f u-boot/trust_with_ta.img && echo yes)
+ifeq ($(HAVE_TRUST_WITH_TA),yes)
+INSTALLED_TRUST_TARGET := $(strip $(wildcard u-boot/trust_with_ta.img))
+else
+INSTALLED_TRUST_TARGET := $(strip $(wildcard u-boot/trust.img))
+endif
 
 .PHONY: notice_files
 
@@ -4752,6 +4761,40 @@ endif
 	$(hide) echo "$(PRODUCT_OTA_PUBLIC_KEYS)" > $(zip_root)/META/otakeys.txt
 	$(hide) cp $(SELINUX_FC) $(zip_root)/META/file_contexts.bin
 	$(hide) cp $(INSTALLED_MISC_INFO_TARGET) $(zip_root)/META/misc_info.txt
+ifeq ($(INSTALLED_LOADER_TARGET),)
+	$(info No RK Loader for TARGET_DEVICE $(TARGET_DEVICE) to otapackage)
+else
+	$(info cp RK Loader:$(TARGET_DEVICE) to otapackage)
+	$(hide) cp $(INSTALLED_LOADER_TARGET) $(zip_root)/RKLoader.bin
+endif
+ifeq ($(INSTALLED_UBOOT_TARGET),)
+	$(info No uboot for uboot/uboot.img to otapackage)
+else
+ifeq ($(AB_OTA_UPDATER),true)
+	$(hide) mkdir -p $(zip_root)/IMAGES
+	$(hide) cp $(INSTALLED_UBOOT_TARGET) $(zip_root)/IMAGES/uboot.img
+else
+	$(hide) cp $(INSTALLED_UBOOT_TARGET) $(zip_root)/uboot.img
+endif
+endif
+ifeq ($(INSTALLED_TRUST_TARGET),)
+	$(info No trust for uboot/trust.img to otapackage)
+else
+ifeq ($(AB_OTA_UPDATER),true)
+	$(hide) mkdir -p $(zip_root)/IMAGES
+	$(hide) cp $(INSTALLED_TRUST_TARGET) $(zip_root)/IMAGES/trust.img
+else
+	$(hide) cp $(INSTALLED_TRUST_TARGET) $(zip_root)/trust.img
+endif
+endif
+ifdef TARGET_PREBUILT_RESOURCE
+	$(info package add resource.img to BOOT and RECOVERY)
+	$(hide) cp $(TARGET_PREBUILT_RESOURCE) $(zip_root)/BOOT/resource.img
+ifneq ($(TARGET_NO_RECOVERY),true)
+	$(hide) cp $(TARGET_PREBUILT_RESOURCE) $(zip_root)/RECOVERY/resource.img
+endif
+endif
+
 ifneq ($(PRODUCT_SYSTEM_BASE_FS_PATH),)
 	$(hide) cp $(PRODUCT_SYSTEM_BASE_FS_PATH) \
 	  $(zip_root)/META/$(notdir $(PRODUCT_SYSTEM_BASE_FS_PATH))

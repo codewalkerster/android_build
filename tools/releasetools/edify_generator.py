@@ -403,6 +403,11 @@ class EdifyGenerator(object):
         raise ValueError(
             "don't know how to write \"%s\" partitions" % p.fs_type)
 
+  def WriteRawLoaderImage(self):
+    """update loader"""
+    self.script.append('package_extract_file("RKLoader.bin", "/tmp/RKLoader.bin");')
+    self.script.append('write_raw_loader_image() || abort("update loader failed.");')
+
   def AppendExtra(self, extra):
     """Append text verbatim to the output script."""
     self.script.append(extra)
