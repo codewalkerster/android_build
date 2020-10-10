@@ -1216,7 +1216,14 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file, info_dict=None,
 
   cmd = [mkbootimg, "--kernel", os.path.join(sourcedir, kernel)]
 
-  fn = os.path.join(sourcedir, "second")
+  if partition_name == "recovery":
+    fn = os.path.join(sourcedir, "resource.img")
+  else:
+    header_version = info_dict.get("booot_header_version")
+    if header_version < 3:
+      fn = os.path.join(sourcedir, "resource.img")
+    else:
+      fn = os.path.join(sourcedir, "second")
   if os.access(fn, os.F_OK):
     cmd.append("--second")
     cmd.append(fn)

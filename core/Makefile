@@ -4425,6 +4425,7 @@ endif
 ifdef DEVICE_MANIFEST_FILE
 	$(hide) echo "vintf_include_empty_vendor_sku=true" >> $@
 endif
+	$(hide) echo "booot_header_version=$(BOARD_BOOT_HEADER_VERSION)" >> $@
 
 .PHONY: misc_info
 misc_info: $(INSTALLED_MISC_INFO_TARGET)
@@ -4804,6 +4805,10 @@ ifdef TARGET_PREBUILT_RESOURCE
 	$(hide) cp $(TARGET_PREBUILT_RESOURCE) $(zip_root)/BOOT/resource.img
 ifneq ($(TARGET_NO_RECOVERY),true)
 	$(hide) cp $(TARGET_PREBUILT_RESOURCE) $(zip_root)/RECOVERY/resource.img
+endif
+ifeq (1,$(strip $(shell expr $(BOARD_BOOT_HEADER_VERSION) \>= 3)))
+	$(hide) mkdir -p $(zip_root)/IMAGES
+	$(hide) cp $(TARGET_PREBUILT_RESOURCE) $(zip_root)/IMAGES/resource.img
 endif
 endif
 
