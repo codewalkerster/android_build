@@ -323,6 +323,9 @@ function setpaths()
     unset BOARD_HS_DYNAMIC_AFBC_TARGET
     export BOARD_HS_DYNAMIC_AFBC_TARGET=$(get_build_var BOARD_HS_DYNAMIC_AFBC_TARGET)
 
+    unset TARGET_RK_GRALLOC_VERSION
+    export TARGET_RK_GRALLOC_VERSION=$(get_build_var TARGET_RK_GRALLOC_VERSION)
+
     # needed for building linux on MacOS
     # TODO: fix the path
     #export HOST_EXTRACFLAGS="-I "$T/system/kernel_headers/host_include
