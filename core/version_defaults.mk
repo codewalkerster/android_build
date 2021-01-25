@@ -240,7 +240,7 @@ ifndef PLATFORM_SECURITY_PATCH
     #  It must be of the form "YYYY-MM-DD" on production devices.
     #  It must match one of the Android Security Patch Level strings of the Public Security Bulletins.
     #  If there is no $PLATFORM_SECURITY_PATCH set, keep it empty.
-      PLATFORM_SECURITY_PATCH := 2020-11-05
+      PLATFORM_SECURITY_PATCH := 2021-01-05
 endif
 .KATI_READONLY := PLATFORM_SECURITY_PATCH
 
@@ -284,9 +284,6 @@ DATE := date -d @$(BUILD_DATETIME)
 $(KATI_obsolete_var BUILD_DATETIME,Use BUILD_DATETIME_FROM_FILE)
 
 HAS_BUILD_NUMBER := true
-ifdef ROCKCHIP_BUILD_NUMBER
-  BUILD_NUMBER := $(ROCKCHIP_BUILD_NUMBER)
-endif
 ifndef BUILD_NUMBER
   # BUILD_NUMBER should be set to the source control value that
   # represents the current state of the source code.  E.g., a
