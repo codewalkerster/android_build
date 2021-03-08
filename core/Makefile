@@ -3890,7 +3890,9 @@ ifeq ($(filter true,$(BUILDING_PRODUCT_IMAGE)),$(filter true,$(BOARD_USES_PRODUC
 ifeq ($(filter true,$(BUILDING_SYSTEM_EXT_IMAGE)),$(filter true,$(BOARD_USES_SYSTEM_EXTIMAGE)))
 
 check_vintf_compatible_log := $(intermediates)/check_vintf_compatible_log
+ifneq ($(BUILD_WITH_RK_EBOOK),true)
 check_vintf_all_deps += $(check_vintf_compatible_log)
+endif
 
 check_vintf_compatible_args :=
 check_vintf_compatible_deps := $(check_vintf_common_srcs)
