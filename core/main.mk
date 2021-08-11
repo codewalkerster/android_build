@@ -17,7 +17,7 @@ DEFAULT_GOAL := droid
 $(DEFAULT_GOAL): droid_targets
 
 # Include prebuild.mk
--include device/rockchip/common/prebuild.mk
+-include device/hardkernel/common/prebuild.mk
 
 .PHONY: droid_targets
 droid_targets:
