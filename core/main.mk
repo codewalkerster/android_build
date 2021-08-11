@@ -20,7 +20,7 @@ $(DEFAULT_GOAL): droid_targets
 droid_targets:
 
 # Include prebuild.mk
--include device/rockchip/common/prebuild.mk
+-include device/hardkernel/common/prebuild.mk
 
 # Set up various standard variables based on configuration
 # and host information.
