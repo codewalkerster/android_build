@@ -19,7 +19,6 @@
 PRODUCT_CFI_INCLUDE_PATHS :=  \
     device/google/cuttlefish/guest/libs/wpa_supplicant_8_lib \
     external/tinyxml2 \
-    external/wpa_supplicant_8 \
     frameworks/av/camera \
     frameworks/av/media \
     frameworks/av/services \
