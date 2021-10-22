@@ -36,3 +36,5 @@ PRODUCT_CFI_INCLUDE_PATHS :=  \
     system/keymaster \
     system/nfc \
     system/security \
+
+   # external/wpa_supplicant_8 \
