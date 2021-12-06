@@ -27,6 +27,7 @@ PRODUCT_PACKAGES += \
     recovery \
     shell_and_utilities_recovery \
     watchdogd.recovery \
+    sgdisk.recovery \
 
 # These had been pulled in via init_second_stage.recovery, but may not be needed.
 PRODUCT_HOST_PACKAGES += \
