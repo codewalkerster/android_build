@@ -1513,6 +1513,7 @@ else
 INSTALLED_TRUST_TARGET := $(strip $(wildcard u-boot/trust.img))
 endif
 
+INSTALLED_FAT_TARGET := $(strip $(wildcard out/target/product/odroidm1/fat.img))
 .PHONY: notice_files
 
 # Convert license metadata into xml notice file.
@@ -5978,6 +5979,16 @@ ifeq ($(AB_OTA_UPDATER),true)
 	$(hide) cp $(INSTALLED_UBOOT_TARGET) $(zip_root)/IMAGES/uboot.img
 else
 	$(hide) cp $(INSTALLED_UBOOT_TARGET) $(zip_root)/uboot.img
+endif
+endif
+ifeq ($(INSTALLED_FAT_TARGET),)
+	$(info No fat for fat.img to otapackage)
+else
+ifeq ($(AB_OTA_UPDATER),true)
+	$(hide) mkdir -p $(zip_root)/IMAGES
+	$(hide) cp $(INSTALLED_FAT_TARGET) $(zip_root)/IMAGES/fat.img
+else
+	$(hide) cp $(INSTALLED_FAT_TARGET) $(zip_root)/fat.img
 endif
 endif
 ifeq ($(INSTALLED_TRUST_TARGET),)
