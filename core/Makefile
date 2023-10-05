@@ -1412,7 +1412,7 @@ else
 INSTALLED_TRUST_TARGET := $(strip $(wildcard u-boot/trust.img))
 endif
 
-INSTALLED_FAT_TARGET := $(strip $(wildcard out/target/product/odroidm1/fat.img))
+INSTALLED_FAT_TARGET := $(strip $(wildcard $(PRODUCT_OUT)/fat.img))
 INSTALLED_EBOOK_LOGO_TARGET := $(strip $(wildcard $(TARGET_DEVICE_DIR)/ota/logo.img))
 
 .PHONY: notice_files
