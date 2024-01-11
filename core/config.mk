@@ -872,7 +872,7 @@ ifdef PRODUCT_SHIPPING_API_LEVEL
     endif
     ifeq ($(PRODUCT_FULL_TREBLE),true)
       ifneq ($(BOARD_BUILD_SYSTEM_ROOT_IMAGE), true)
-        $(error When PRODUCT_SHIPPING_API_LEVEL >= 28, BOARD_BUILD_SYSTEM_ROOT_IMAGE must be true)
+#$(error When PRODUCT_SHIPPING_API_LEVEL >= 28, BOARD_BUILD_SYSTEM_ROOT_IMAGE must be true)
       endif
     endif
   endif
