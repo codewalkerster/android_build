@@ -36,7 +36,7 @@ endif
 $(call add_soong_config_var,ANDROID,BOARD_USES_ODMIMAGE)
 $(call add_soong_config_var,ANDROID,BOARD_USES_RECOVERY_AS_BOOT)
 $(call add_soong_config_var,ANDROID,PRODUCT_INSTALL_DEBUG_POLICY_TO_SYSTEM_EXT)
-
+$(call add_soong_config_var,ANDROID,DISABLE_PARALLEL_POLL)
 # Default behavior for the tree wrt building modules or using prebuilts. This
 # can always be overridden by setting the environment variable
 # MODULE_BUILD_FROM_SOURCE.

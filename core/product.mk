@@ -384,7 +384,7 @@ _product_single_value_vars += PRODUCT_INSTALL_EXTRA_FLATTENED_APEXES
 # init-second-stage to load debug policy from system_ext.
 # This option is only meant to be set by compliance GSI targets.
 _product_single_value_vars += PRODUCT_INSTALL_DEBUG_POLICY_TO_SYSTEM_EXT
-
+_product_single_value_vars += DISABLE_PARALLEL_POLL
 # If set, fsverity metadata files will be generated for each files in the
 # allowlist, plus an manifest APK per partition. For example,
 # /system/framework/service.jar will come with service.jar.fsv_meta in the same
