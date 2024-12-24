@@ -25,7 +25,11 @@ PRODUCT_PACKAGES += \
     AccessibilityMenu \
     Launcher3QuickStep \
     Provision \
-    Settings \
     StorageManager \
     SystemUI \
     WallpaperCropper \
+
+ifneq ($(ODROID_BOARD), true)
+PRODUCT_PACKAGES += \
+    Settings
+endif
