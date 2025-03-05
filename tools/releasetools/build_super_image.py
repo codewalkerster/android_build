@@ -103,8 +103,7 @@ def BuildSuperImageFromDict(info_dict, output):
   for group in groups:
     group_size = info_dict["super_{}_group_size".format(group)]
     if append_suffix:
-      cmd += ["--group", "{}_a:{}".format(group, group_size),
-              "--group", "{}_b:{}".format(group, group_size)]
+      cmd += ["--group", "{}_a:{}".format(group, group_size)]
     else:
       cmd += ["--group", "{}:{}".format(group, group_size)]
 
@@ -130,8 +129,6 @@ def BuildSuperImageFromDict(info_dict, output):
       if partition == "system" and "system_other_image" in info_dict:
         other_image = info_dict["system_other_image"]
         has_image = True
-
-      cmd += GetArgumentsForImage(partition + "_b", group + "_b", other_image)
 
   if info_dict.get("build_non_sparse_super_partition") != "true":
     cmd.append("--sparse")
