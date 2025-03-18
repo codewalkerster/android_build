@@ -81,6 +81,7 @@ def BuildSuperImageFromDict(info_dict, output):
   retrofit = info_dict.get("dynamic_partition_retrofit") == "true"
   block_devices = shlex.split(info_dict.get("super_block_devices", "").strip())
   groups = shlex.split(info_dict.get("super_partition_groups", "").strip())
+  remove_b_partitions = info_dict.get("remove_b_partitions") == "true"
 
   if ab_update and retrofit:
     cmd += ["--metadata-slots", "2"]
@@ -103,7 +104,12 @@ def BuildSuperImageFromDict(info_dict, output):
   for group in groups:
     group_size = info_dict["super_{}_group_size".format(group)]
     if append_suffix:
-      cmd += ["--group", "{}_a:{}".format(group, group_size)]
+      if remove_b_partitions:
+        cmd += ["--group", "{}_a:{}".format(group, group_size)]
+      else:
+        cmd += ["--group", "{}_a:{}".format(group, group_size),
+                "--group", "{}_b:{}".format(group, group_size)]
+
     else:
       cmd += ["--group", "{}:{}".format(group, group_size)]
 
@@ -129,6 +135,9 @@ def BuildSuperImageFromDict(info_dict, output):
       if partition == "system" and "system_other_image" in info_dict:
         other_image = info_dict["system_other_image"]
         has_image = True
+
+      if not remove_b_partitions:
+        cmd += GetArgumentsForImage(partition + "_b", group + "_b", other_image)
 
   if info_dict.get("build_non_sparse_super_partition") != "true":
     cmd.append("--sparse")

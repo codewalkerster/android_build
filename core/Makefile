@@ -5705,6 +5705,8 @@ define dump-dynamic-partitions-info
     echo "virtual_ab_compression_method=$(PRODUCT_VIRTUAL_AB_COMPRESSION_METHOD)" >> $(1))
   $(if $(filter true,$(PRODUCT_VIRTUAL_AB_OTA_RETROFIT)), \
     echo "virtual_ab_retrofit=true" >> $(1))
+  $(if $(filter true,$(REMOVE_B_PARTITIONS)), \
+    echo "remove_b_partitions=true" >> $(1))
 endef
 
 # By conditionally including the dependency of the target files package on the
