@@ -299,7 +299,7 @@ OPTIONS.oem_dicts = None
 OPTIONS.oem_source = None
 OPTIONS.oem_no_mount = False
 OPTIONS.full_radio = False
-OPTIONS.full_bootloader = False
+OPTIONS.full_bootloader = True
 # Stash size cannot exceed cache_size * threshold.
 OPTIONS.cache_size = None
 OPTIONS.stash_threshold = 0.8
@@ -642,6 +642,38 @@ def GetTargetFilesZipForPartialUpdates(input_file, ab_partitions):
   return partial_target_file
 
 
+def GetTargetFilesZipForFullBootloader(input_file):
+  """Returns a source-files.zip for full bootloader.
+
+  Args:
+    input_file: The input target-files.zip filename.
+
+  Returns:
+    The filename of target-files.zip with no bootloader.img.
+  """
+
+  if os.path.exists(input_file + "/RADIO/bootloader.img"):
+    os.unlink(input_file + "/RADIO/bootloader.img")
+  if os.path.exists(input_file + "/IMAGES/bootloader.img"):
+    os.unlink(input_file + "/IMAGES/bootloader.img")
+
+  # Remove bootloader partitions from META/ab_partitions.txt
+  ab_partitions_file = os.path.join(input_file, *AB_PARTITIONS.split('/'))
+  with open(ab_partitions_file) as f:
+    ab_partitions_lines = f.readlines()
+    ab_partitions = [line.strip() for line in ab_partitions_lines]
+
+  os.unlink(input_file + "/META/ab_partitions.txt")
+  with open(input_file + "/META/ab_partitions.txt", 'w') as f:
+    for partition in ab_partitions:
+      if partition == 'bootloader':
+        logger.warning("Dropping %s from ab_partitions.txt", partition)
+        continue
+      f.write(partition + "\n")
+
+  return input_file
+
+
 def GetTargetFilesZipForRetrofitDynamicPartitions(input_file,
                                                   super_block_devices,
                                                   dynamic_partition_list):
@@ -856,6 +888,11 @@ def GenerateAbOtaPackage(target_file, output_file, source_file=None):
         "META/ab_partitions.txt is required for ab_update."
     assert "ab_partitions" in OPTIONS.target_info_dict, \
         "META/ab_partitions.txt is required for ab_update."
+
+    if OPTIONS.full_bootloader:
+      logger.warning("******use full bootloader *****")
+      source_file = GetTargetFilesZipForFullBootloader(source_file)
+
     target_info = common.BuildInfo(OPTIONS.target_info_dict, OPTIONS.oem_dicts)
     source_info = common.BuildInfo(OPTIONS.source_info_dict, OPTIONS.oem_dicts)
     # If source supports VABC, delta_generator/update_engine will attempt to
